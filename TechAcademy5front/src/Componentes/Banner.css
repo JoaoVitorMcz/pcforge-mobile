@@ -1,0 +1,139 @@
+.banner {
+  position: relative;
+  width: 100%;
+  height: 70vh;
+  min-height: 320px;
+  overflow: hidden;
+}
+
+.banner img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.banner::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to right,
+    rgba(0, 0, 0, 0.75),
+    rgba(0, 0, 0, 0.2)
+  );
+}
+
+.banner-content {
+  position: absolute;
+  top: 50%;
+  left: 8%;
+  transform: translateY(-50%);
+  color: white;
+  z-index: 2;
+  max-width: 500px;
+}
+
+.banner-content h1 {
+  font-size: clamp(28px, 5vw, 60px);
+  margin-bottom: 16px;
+  animation: slideUp 1s ease;
+  line-height: 1.1;
+}
+
+.banner-content p {
+  font-size: clamp(14px, 2vw, 20px);
+  margin-bottom: 20px;
+  animation: fadeIn 1.5s ease;
+  line-height: 1.5;
+}
+
+.banner-content button {
+  padding: 12px 24px;
+  border-radius: 30px;
+  border: none;
+  font-weight: bold;
+  cursor: pointer;
+  background: white;
+  color: black;
+  transition: 0.3s;
+  font-size: clamp(13px, 1.5vw, 16px);
+}
+
+.banner-content button:hover {
+  transform: scale(1.05);
+  background-color: #00d4ff;
+}
+
+
+
+/* ── Dots ── */
+.dots {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 10px;
+  z-index: 2;
+}
+
+.dot {
+  width: 36px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.dot.active {
+  background: linear-gradient(90deg, #00ffff, #00ff88);
+  box-shadow: 0 0 6px #00ffff, 0 0 12px #00ffff;
+}
+
+/* ── Animações ── */
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(40px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ── Responsivo ── */
+@media (max-width: 768px) {
+  .banner { height: 55vh; }
+
+  .banner-content {
+    left: 5%;
+    right: 5%;
+    max-width: 100%;
+  }
+
+  .banner-content h1 { font-size: clamp(22px, 6vw, 36px); }
+  .banner-content p { font-size: clamp(13px, 3vw, 16px); }
+
+  .prev, .next {
+    width: 34px;
+    height: 34px;
+    font-size: 15px;
+  }
+
+  .dot { width: 28px; }
+}
+
+@media (max-width: 480px) {
+  .banner { height: 50vh; min-height: 280px; }
+
+  .banner-content h1 { font-size: clamp(20px, 7vw, 28px); margin-bottom: 10px; }
+  .banner-content p { font-size: 13px; margin-bottom: 14px; }
+
+  .banner-content button { padding: 10px 20px; font-size: 13px; }
+
+  .prev { left: 8px; }
+  .next { right: 8px; }
+
+  .dot { width: 22px; }
+}

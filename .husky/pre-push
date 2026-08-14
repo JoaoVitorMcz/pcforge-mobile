@@ -1,0 +1,23 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+echo "🔍 Pre-push: executando testes do backend..."
+cd TechAcademy5back || exit 1
+npm test
+RET=$?
+if [ $RET -ne 0 ]; then
+  echo "❌ Testes do backend falharam. Push bloqueado."
+  exit $RET
+fi
+
+echo "🔍 Pre-push: executando testes E2E do frontend..."
+cd ../TechAcademy5front || exit 1
+npm run test:e2e
+RET=$?
+if [ $RET -ne 0 ]; then
+  echo "❌ Testes E2E do frontend falharam. Push bloqueado."
+  exit $RET
+fi
+
+echo "✅ Pre-push concluído com sucesso. Push liberado."
+exit 0

@@ -1,0 +1,140 @@
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=DM+Sans:wght@400;500&display=swap');
+
+.perifericos-page {
+  background: #070b14;
+  min-height: 100vh;
+  padding: 3rem 5%;
+  font-family: 'DM Sans', sans-serif;
+}
+
+.perifericos-loading {
+  background: #070b14;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: #00d4ff;
+}
+
+.perifericos-header {
+  margin-bottom: 2rem;
+}
+
+.perifericos-header h1 {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: white;
+  margin: 0 0 4px;
+}
+
+.perifericos-header h1 span {
+  color: #00d4ff;
+}
+
+.perifericos-header p {
+  font-size: 13px;
+  color: #7a8fa6;
+  margin: 0;
+}
+
+.perifericos-layout {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+.catalogo-wrapper {
+  display: grid;
+  gap: 18px;
+}
+
+.catalogo-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  color: #7a8fa6;
+  font-size: 13px;
+}
+
+.catalogo-paginacao {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.catalogo-paginas {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.catalogo-pagina-btn {
+  min-width: 42px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid #1a2a45;
+  background: #0d1526;
+  color: #c7d3e5;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.catalogo-pagina-btn:hover:not(:disabled) {
+  border-color: #00d4ff;
+  color: #00d4ff;
+}
+
+.catalogo-pagina-btn.active {
+  background: #00d4ff;
+  border-color: #00d4ff;
+  color: #070b14;
+}
+
+.catalogo-pagina-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.produtos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.sem-produtos {
+  color: #7a8fa6;
+  font-size: 14px;
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 768px) {
+  .perifericos-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .perifericos-page {
+    padding: 2rem 1rem;
+  }
+
+  .catalogo-paginacao {
+    justify-content: center;
+  }
+}

@@ -1,0 +1,40 @@
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=DM+Sans:wght@400;500&display=swap');
+
+.home {
+  background: #070b14;
+  min-height: 100vh;
+  font-family: 'DM Sans', sans-serif;
+}
+
+.section-title {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: white;
+  margin-bottom: 2rem;
+}
+
+.section-title span {
+  color: #00d4ff;
+}
+
+.produtos-section {
+  padding: 3rem 5%;
+}
+
+.produtos-layout {
+  display: block;
+}
+
+.produtos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.sem-produtos {
+  color: #7a8fa6;
+  font-size: 14px;
+  grid-column: 1 / -1;
+}

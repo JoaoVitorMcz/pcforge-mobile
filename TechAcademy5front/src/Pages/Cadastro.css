@@ -1,0 +1,178 @@
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=DM+Sans:wght@400;500&display=swap');
+
+.cadastro-container {
+  min-height: 100vh;
+  background: #070b14;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  font-family: 'DM Sans', sans-serif;
+}
+
+.cadastro-box {
+  background: #0d1526;
+  border: 1px solid #1a2a45;
+  border-radius: 16px;
+  padding: 2.5rem 2rem;
+  width: 100%;
+  max-width: 480px;
+}
+
+.cadastro-box h1 {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: white;
+  margin: 0 0 0.3rem;
+}
+
+.cadastro-box h1 span {
+  color: #00d4ff;
+}
+
+.cadastro-box > p {
+  font-size: 13px;
+  color: #7a8fa6;
+  margin: 0 0 2rem;
+}
+
+/* ── Campos ── */
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 1.1rem;
+}
+
+.campo label {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #7a8fa6;
+}
+
+.campo input {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  padding: 11px 14px;
+  background: #070b14;
+  border: 1px solid #1a2a45;
+  border-radius: 8px;
+  color: white;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.campo input::placeholder {
+  color: #3a4f6a;
+}
+
+.campo input:focus {
+  border-color: #00d4ff;
+  box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.08);
+}
+
+.campo input:focus::placeholder {
+  color: transparent;
+}
+
+/* input de data */
+.campo input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.5) sepia(1) saturate(3) hue-rotate(160deg);
+  cursor: pointer;
+}
+
+/* ── Erro ── */
+.erro {
+  font-size: 12px;
+  color: #ff4d6d;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.erro::before {
+  content: "!";
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  background: #ff4d6d;
+  color: #070b14;
+  border-radius: 50%;
+  font-size: 10px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* ── Botão ── */
+.cadastro-box button[type="submit"] {
+  width: 100%;
+  padding: 13px;
+  margin-top: 0.5rem;
+  background: #00d4ff;
+  border: none;
+  border-radius: 8px;
+  color: #070b14;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.1s, box-shadow 0.2s;
+}
+
+.cadastro-box button[type="submit"]:hover {
+  opacity: 0.88;
+  box-shadow: 0 0 18px rgba(0, 212, 255, 0.35);
+}
+
+.cadastro-box button[type="submit"]:active {
+  transform: scale(0.98);
+}
+
+/* ── Link de login ── */
+.cadastro-box > p:last-child {
+  text-align: center;
+  font-size: 13px;
+  color: #7a8fa6;
+  margin: 1.2rem 0 0;
+}
+
+.cadastro-box a {
+  color: #00d4ff;
+  text-decoration: none;
+  font-weight: 500;
+  transition: opacity 0.2s;
+}
+
+.cadastro-box a:hover {
+  opacity: 0.75;
+  text-decoration: underline;
+}
+
+/* ── Tela de sucesso ── */
+.cadastro-box h2 {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 26px;
+  font-weight: 700;
+  color: #00d4ff;
+  letter-spacing: 0.05em;
+  margin: 0 0 0.5rem;
+}
+
+/* ── Responsivo ── */
+@media (max-width: 520px) {
+  .cadastro-box {
+    padding: 2rem 1.2rem;
+  }
+}

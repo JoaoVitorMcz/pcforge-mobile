@@ -1,0 +1,219 @@
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=DM+Sans:wght@400;500&display=swap');
+
+/* ── Página inteira ── */
+.suporte-page {
+  background: #070b14;
+  min-height: 100vh;
+  padding: 3rem 5%;
+  font-family: 'DM Sans', sans-serif;
+}
+
+/* ── Container do formulário ── */
+.suporte-wrap {
+  max-width: 680px;
+  margin: 0 auto;
+  background: #0d1526;
+  border: 1px solid #1a2a45;
+  border-radius: 16px;
+  padding: 2.5rem 2rem;
+}
+
+.suporte-header {
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid #1a2a45;
+  padding-bottom: 1.5rem;
+}
+
+.suporte-header-text h2 {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin: 0 0 4px;
+  color: white;
+}
+
+.suporte-header-text p {
+  font-size: 13px;
+  color: #7a8fa6;
+  margin: 0;
+}
+
+.suporte-subtitulo {
+  font-size: 13px;
+  color: #7a8fa6;
+  margin: 0 0 12px;
+}
+
+/* ── Tags ── */
+.tags-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.tag {
+  font-size: 12px;
+  font-weight: 500;
+  padding: 5px 14px;
+  border-radius: 999px;
+  border: 1px solid #1a2a45;
+  background: #070b14;
+  color: #7a8fa6;
+  cursor: pointer;
+  transition: all 0.2s;
+  user-select: none;
+}
+
+.tag:hover {
+  border-color: #00d4ff;
+  color: #00d4ff;
+}
+
+.tag.active {
+  background: #00d4ff;
+  border-color: #00d4ff;
+  color: #070b14;
+  font-weight: 700;
+}
+
+/* ── Divider ── */
+.divider {
+  height: 1px;
+  background: #1a2a45;
+  margin: 4px 0 20px;
+}
+
+/* ── Form Grid ── */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-field.full {
+  grid-column: 1 / -1;
+}
+
+.form-field label {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #7a8fa6;
+}
+
+.form-field input,
+.form-field textarea {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  padding: 11px 14px;
+  background: #070b14;
+  border: 1px solid #1a2a45;
+  border-radius: 8px;
+  color: white;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.form-field input::placeholder,
+.form-field textarea::placeholder {
+  color: #3a4f6a;
+}
+
+.form-field input:focus,
+.form-field textarea:focus {
+  border-color: #00d4ff;
+  box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.08);
+}
+
+.form-field textarea {
+  resize: vertical;
+  min-height: 120px;
+  line-height: 1.6;
+}
+
+/* ── Footer ── */
+.form-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.form-footer-note {
+  font-size: 12px;
+  color: #3a4f6a;
+}
+
+/* ── Botão ── */
+.btn-enviar {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 11px 28px;
+  background: #00d4ff;
+  color: #070b14;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.1s, box-shadow 0.2s;
+}
+
+.btn-enviar:hover {
+  opacity: 0.85;
+  box-shadow: 0 0 18px rgba(0, 212, 255, 0.35);
+}
+
+.btn-enviar:active { transform: scale(0.98); }
+.btn-enviar:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ── Status ── */
+.status-msg {
+  font-size: 13px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  margin-top: 16px;
+}
+
+.status-msg.sucesso {
+  background: rgba(0, 212, 255, 0.08);
+  color: #00d4ff;
+  border: 1px solid rgba(0, 212, 255, 0.25);
+}
+
+.status-msg.erro {
+  background: rgba(255, 77, 109, 0.08);
+  color: #ff4d6d;
+  border: 1px solid rgba(255, 77, 109, 0.25);
+}
+
+/* ── Responsivo ── */
+@media (max-width: 520px) {
+  .suporte-page { padding: 2rem 1rem; }
+
+  .form-grid { grid-template-columns: 1fr; }
+
+  .form-field.full { grid-column: 1; }
+
+  .form-footer {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .btn-enviar { width: 100%; }
+}

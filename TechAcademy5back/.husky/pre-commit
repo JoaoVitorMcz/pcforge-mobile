@@ -1,0 +1,5 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+# Run lint-staged to auto-fix and validate staged files before commit
+npx --no-install lint-staged

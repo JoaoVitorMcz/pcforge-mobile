@@ -1,0 +1,13 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+echo "🔍 Validando mensagem de commit com commitlint..."
+echo "   Formato esperado: tipo(escopo): descrição"
+echo "   Exemplos: feat: adicionar login, fix: corrigir bug no carrinho"
+npx --no -- commitlint --edit "$1"
+RET=$?
+if [ $RET -ne 0 ]; then
+  echo "❌ Mensagem de commit inválida. Use o formato convencional (feat, fix, chore, docs, etc)."
+  exit $RET
+fi
+echo "✅ Mensagem de commit válida."
