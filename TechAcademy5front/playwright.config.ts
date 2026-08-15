@@ -10,7 +10,7 @@ export default defineConfig({
     command: 'npm start',
     url: 'http://localhost:3001',
     reuseExistingServer: !process.env.CI,
-    timeout: 120000,
+    timeout: 300000,
     env: {
       BROWSER: 'none',
       DANGEROUSLY_DISABLE_HOST_CHECK: 'true',
