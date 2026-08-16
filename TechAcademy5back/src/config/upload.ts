@@ -1,8 +1,15 @@
 import multer from "multer";
 import path from "node:path";
 import fs from "fs";
+import { UploadValidationError } from "../utils/upload.errors";
 
-const uploadDir = path.resolve(__dirname, "..", "..", "uploads");
+/**
+ * Pasta onde as imagens sao gravadas. Configuravel por UPLOAD_DIR para que os
+ * testes gravem em uma pasta temporaria e nunca toquem nos uploads reais.
+ */
+export const uploadDir = process.env.UPLOAD_DIR
+  ? path.resolve(process.env.UPLOAD_DIR)
+  : path.resolve(__dirname, "..", "..", "uploads");
 
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
@@ -30,11 +37,11 @@ const fileFilter = (
   const ext = path.extname(file.originalname).toLowerCase();
 
   if (!ALLOWED_EXTENSIONS.includes(ext)) {
-    return cb(new Error(`Extensão não permitida: ${ext || "sem extensão"}`));
+    return cb(new UploadValidationError(`Extensão não permitida: ${ext || "sem extensão"}`));
   }
 
   if (!ALLOWED_MIME_TYPES.includes(file.mimetype)) {
-    return cb(new Error(`Tipo de arquivo não permitido: ${file.mimetype}`));
+    return cb(new UploadValidationError(`Tipo de arquivo não permitido: ${file.mimetype}`));
   }
 
   cb(null, true);

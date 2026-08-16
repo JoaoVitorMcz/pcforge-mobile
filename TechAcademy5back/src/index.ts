@@ -1,8 +1,9 @@
 import "dotenv/config";
 import express, { Request, Response, NextFunction } from "express";
-import path from "path";
 import multer from "multer";
 import sequelize from "./config/database/index";
+import { uploadDir } from "./config/upload";
+import { UploadValidationError } from "./utils/upload.errors";
 import clienteRoutes from "./routes/cliente.routes";
 import produtoRoutes from "./routes/produto.routes";
 import categoriaRoutes from "./routes/categoria.routes";
@@ -16,7 +17,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
-app.use("/uploads", express.static(path.resolve(__dirname, "..", "uploads")));
+app.use("/uploads", express.static(uploadDir));
 
 // Rotas
 app.use("/clientes", clienteRoutes);
@@ -37,7 +38,7 @@ app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
     return res.status(400).json({ error: `Erro no upload: ${err.message}` });
   }
 
-  if (err instanceof Error && err.message.includes("não permitid")) {
+  if (err instanceof UploadValidationError) {
     return res.status(400).json({ error: err.message });
   }
 
