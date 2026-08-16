@@ -35,3 +35,4 @@ TechAcademy5back/coverage/
 
 # frontend test artifacts
 TechAcademy5front/test-results/
+TechAcademy5front/playwright-report/
