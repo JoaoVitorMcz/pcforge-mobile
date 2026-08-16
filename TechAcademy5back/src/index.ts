@@ -1,6 +1,7 @@
 import "dotenv/config";
-import express from "express";
+import express, { Request, Response, NextFunction } from "express";
 import path from "path";
+import multer from "multer";
 import sequelize from "./config/database/index";
 import clienteRoutes from "./routes/cliente.routes";
 import produtoRoutes from "./routes/produto.routes";
@@ -26,6 +27,23 @@ app.use("/pedidos", pedidoRoutes);
 app.use("/itens-pedido", itemPedidoRoutes);
 app.use("/upload", uploadRoutes);
 app.use("/pagamentos", pagamentoRoutes);
+
+// Middleware de tratamento de erros para uploads (Multer)
+app.use((err: unknown, req: Request, res: Response, next: NextFunction) => {
+  if (err instanceof multer.MulterError) {
+    if (err.code === "LIMIT_FILE_SIZE") {
+      return res.status(413).json({ error: "Arquivo excede o tamanho máximo de 5MB." });
+    }
+    return res.status(400).json({ error: `Erro no upload: ${err.message}` });
+  }
+
+  if (err instanceof Error && err.message.includes("não permitid")) {
+    return res.status(400).json({ error: err.message });
+  }
+
+  console.error(err);
+  return res.status(500).json({ error: "Erro interno do servidor." });
+});
 
 export async function startServer() {
   try {

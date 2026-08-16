@@ -1,5 +1,5 @@
 import multer from "multer";
-import path from "path";
+import path from "node:path";
 import fs from "fs";
 
 const uploadDir = path.resolve(__dirname, "..", "..", "uploads");
@@ -19,19 +19,25 @@ const storage = multer.diskStorage({
   },
 });
 
+const ALLOWED_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp", ".gif"];
+const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+
 const fileFilter = (
   _req: Express.Request,
   file: Express.Multer.File,
   cb: multer.FileFilterCallback
 ) => {
-  const tiposPermitidos = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+  const ext = path.extname(file.originalname).toLowerCase();
 
-  if (tiposPermitidos.includes(file.mimetype)) {
-    cb(null, true);
-    return;
+  if (!ALLOWED_EXTENSIONS.includes(ext)) {
+    return cb(new Error(`Extensão não permitida: ${ext || "sem extensão"}`));
   }
 
-  cb(new Error("Tipo de arquivo não permitido. Use JPEG, PNG, WEBP ou GIF."));
+  if (!ALLOWED_MIME_TYPES.includes(file.mimetype)) {
+    return cb(new Error(`Tipo de arquivo não permitido: ${file.mimetype}`));
+  }
+
+  cb(null, true);
 };
 
 export const upload = multer({
