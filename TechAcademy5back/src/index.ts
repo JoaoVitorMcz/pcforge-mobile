@@ -29,7 +29,7 @@ app.use("/upload", uploadRoutes);
 app.use("/pagamentos", pagamentoRoutes);
 
 // Middleware de tratamento de erros para uploads (Multer)
-app.use((err: unknown, req: Request, res: Response, next: NextFunction) => {
+app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
   if (err instanceof multer.MulterError) {
     if (err.code === "LIMIT_FILE_SIZE") {
       return res.status(413).json({ error: "Arquivo excede o tamanho máximo de 5MB." });

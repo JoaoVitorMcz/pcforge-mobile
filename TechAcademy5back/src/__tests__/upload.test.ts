@@ -1,15 +1,18 @@
 import request from "supertest";
 import path from "path";
 import fs from "fs";
+import { Request, Response, NextFunction } from "express";
 
 // Mock middleware to bypass auth and mark as admin for upload tests
 jest.mock("../config/auth.middleware", () => ({
-  authMiddleware: (req: any, _res: any, next: any) => {
+  authMiddleware: (req: Request, _res: Response, next: NextFunction) => {
     req.cliente = { id_cliente: 1, email: "admin@pcforge.com", admin: true };
     next();
   },
-  adminMiddleware: (_req: any, _res: any, next: any) => next(),
-  selfOrAdminMiddleware: (_paramName?: string) => (_req: any, _res: any, next: any) => next(),
+  adminMiddleware: (_req: Request, _res: Response, next: NextFunction) => next(),
+  selfOrAdminMiddleware:
+    (_paramName?: string) => (_req: Request, _res: Response, next: NextFunction) =>
+      next(),
 }));
 
 import app from "../index";
