@@ -83,3 +83,26 @@ jobs:
           name: playwright-report
           path: TechAcademy5front/playwright-report/
           retention-days: 7
+
+  mobile-checks:
+    name: Mobile Checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js 22.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+
+      - name: Install mobile dependencies
+        working-directory: TechAcademy5mobile
+        run: npm ci
+
+      - name: Typecheck
+        working-directory: TechAcademy5mobile
+        run: npx tsc --noEmit
+
+      - name: Lint
+        working-directory: TechAcademy5mobile
+        run: npm run lint
