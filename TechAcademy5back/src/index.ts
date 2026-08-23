@@ -13,6 +13,7 @@ import pedidoRoutes from "./routes/pedido.routes";
 import itemPedidoRoutes from "./routes/itempedido.routes";
 import uploadRoutes from "./routes/upload.routes";
 import pagamentoRoutes from "./routes/pagamento.routes";
+import dashboardRoutes from "./routes/dashboard.routes";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -44,6 +45,7 @@ app.use("/pedidos", pedidoRoutes);
 app.use("/itens-pedido", itemPedidoRoutes);
 app.use("/upload", uploadRoutes);
 app.use("/pagamentos", pagamentoRoutes);
+app.use("/admin", dashboardRoutes);
 
 // Middleware de tratamento de erros para uploads (Multer)
 app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {

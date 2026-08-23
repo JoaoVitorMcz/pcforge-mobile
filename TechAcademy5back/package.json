@@ -8,6 +8,7 @@
     "dev": "nodemon --watch src --exec ts-node src/index.ts",
     "prepare": "husky install || true",
     "lint": "eslint --ext .ts src",
+    "seed": "ts-node src/scripts/seed.ts",
     "test": "jest",
     "test:coverage": "jest --coverage",
     "test:detect-open-handles": "jest --detectOpenHandles --runInBand"
