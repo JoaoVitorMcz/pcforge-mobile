@@ -3,6 +3,9 @@ import express, { Request, Response, NextFunction } from "express";
 import cors from "cors";
 import multer from "multer";
 import sequelize from "./config/database/index";
+// Registra as quatro tabelas do RBAC e as duas relacoes N:N no sequelize.sync().
+// Sem este import, o include de roles no login nao encontra a associacao.
+import "./models/rbac.associations";
 import { uploadDir } from "./config/upload";
 import { UploadValidationError } from "./utils/upload.errors";
 import clienteRoutes from "./routes/cliente.routes";

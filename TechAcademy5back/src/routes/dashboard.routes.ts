@@ -1,10 +1,10 @@
 import { Router } from "express";
 import { obterDashboard } from "../controllers/dashboard.controller";
-import { authMiddleware, adminMiddleware } from "../config/auth.middleware";
+import { authMiddleware, authorizeRole } from "../config/auth.middleware";
 
 const router = Router();
 
 // (somente admin)
-router.get("/dashboard", authMiddleware, adminMiddleware, obterDashboard);
+router.get("/dashboard", authMiddleware, authorizeRole(["admin"]), obterDashboard);
 
 export default router;

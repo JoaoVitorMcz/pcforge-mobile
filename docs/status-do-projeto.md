@@ -7,7 +7,7 @@ decisões foram tomadas assim.
 > requisitos e diagramas são artefatos separados, listados na Fase D como pendentes.
 > Não marque aquele item da rubrica como pronto por causa deste documento.
 
-Última atualização: fim da Fase M1.
+Última atualização: fim da Fase M1, mais o RBAC do backend.
 
 ## Placar da rubrica
 
@@ -32,8 +32,9 @@ decisões foram tomadas assim.
 
 Sobre os dois itens parciais:
 
-- **Controle admin × usuário (2,0)** — backend, web e app já implementam. Falta a
-  demonstração de ponta a ponta e as evidências, previstas na Fase M2.
+- **Controle admin × usuário (2,0)** — backend, web e app já implementam, agora sobre RBAC
+  com papéis e permissões ([docs/rbac.md](rbac.md)). Falta a demonstração de ponta a ponta
+  e as evidências, previstas na Fase M2.
 - **Regra de negócio (0,5)** — validação de formulário feita (CPF, e-mail, senha forte,
   campos obrigatórios de endereço). Faltam as regras de compra: estoque e checkout.
 
@@ -75,7 +76,8 @@ custo-benefício em aberto e não depende de nenhuma das fases acima.
 
 - [ ] `docs/contextualizacao.md`: problema, persona e a evolução web → web + mobile
 - [ ] `docs/der.png`: a partir de `Cliente`, `Produto`, `Categoria`, `Pedido`,
-      `Itempedido` e `Endereco`
+      `Itempedido`, `Endereco` **e as quatro tabelas do RBAC** — o ER em Mermaid de
+      [docs/rbac.md](rbac.md) já cobre essa metade
 - [ ] `docs/requisitos.md`: requisitos funcionais e não funcionais
 - [ ] 2 diagramas de caso de uso — ex.: cliente compra pelo app; admin gerencia produtos na web
 - [ ] 2 diagramas de atividade — ex.: fluxo de checkout; upload com validação de imagem
@@ -91,7 +93,12 @@ custo-benefício em aberto e não depende de nenhuma das fases acima.
   pelas telas.
 - **Controle de acesso em três camadas independentes.** A aba some para o cliente comum;
   o layout da área admin redireciona quem chega por navegação direta; a API responde 403
-  pelo `adminMiddleware`. Esconder a aba, sozinho, não é proteção.
+  pelo `authorizeRole`. Esconder a aba, sozinho, não é proteção.
+- **RBAC com papéis e permissões, não um boolean.** As tabelas `role`, `permissao`,
+  `cliente_role` e `role_permissao` seguem o modelo clássico, e `authorizeRole([...])` é
+  uma função de ordem superior: cada rota declara quais papéis aceita. O boolean `admin`
+  continua espelhado no token porque web e mobile leem esse campo — trocar as três camadas
+  de uma vez seria risco sem ganho. Detalhes em [docs/rbac.md](rbac.md).
 - **O CRUD da rubrica é o de Endereços.** É o mais limpo de demonstrar (quatro operações
   óbvias) e as rotas já existiam no backend.
 - **A URL da API é deduzida do host do dev server do Expo.** O app funciona na máquina de
@@ -114,6 +121,10 @@ custo-benefício em aberto e não depende de nenhuma das fases acima.
   upload que apaga `uploads/` real e com `MYSQL_USER=root` no `.env.example` — ou seja,
   quem clonar a `main` não consegue nem subir o banco. Foi decisão consciente aguardar
   alinhamento da dupla, mas não deve ir para a entrega assim.
+- **O boolean `admin` convive com o RBAC.** O token carrega `roles` e `admin` ao mesmo
+  tempo, e `extrairRoles` deriva um do outro nos dois sentidos. É proposital: web e mobile
+  ainda leem `admin`. Remover o boolean quando as duas pontas passarem a ler `roles` —
+  enquanto os dois existirem, os dois precisam concordar.
 - **Acesso do celular pela LAN nunca testado num aparelho real.** O bundle compila e a
   API responde pelo IP da máquina, mas ninguém abriu o app em um telefone. Se não
   conectar, o primeiro suspeito é o firewall: o Wi-Fi está no perfil **Público**, onde o

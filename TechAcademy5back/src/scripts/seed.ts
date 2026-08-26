@@ -4,6 +4,11 @@ import sequelize from "../config/database";
 import Cliente from "../models/Cliente";
 import Categoria from "../models/Categoria";
 import Produto from "../models/Produto";
+import Role from "../models/Role";
+import Permissao from "../models/Permissao";
+import ClienteRole from "../models/ClienteRole";
+import RolePermissao from "../models/RolePermissao";
+import "../models/rbac.associations";
 
 /**
  * Popula o banco com dados minimos para desenvolvimento e demonstracao.
@@ -17,6 +22,59 @@ import Produto from "../models/Produto";
  */
 
 const SENHA_PADRAO = "Senha@123";
+
+const CONTAS = [
+  {
+    nome: "Administrador PC Forge",
+    email: "admin@pcforge.com",
+    cpf: "111.111.111-11",
+    admin: true,
+    role: "admin",
+  },
+  {
+    nome: "Cliente Teste",
+    email: "cliente@pcforge.com",
+    cpf: "222.222.222-22",
+    admin: false,
+    role: "cliente",
+  },
+];
+
+/** Recursos que a API expoe hoje, com as acoes que cada um aceita. */
+const PERMISSOES_POR_RECURSO: Record<string, string[]> = {
+  produto: ["criar", "ler", "atualizar", "deletar"],
+  categoria: ["criar", "ler", "atualizar", "deletar"],
+  pedido: ["criar", "ler", "atualizar", "deletar"],
+  cliente: ["criar", "ler", "atualizar", "deletar"],
+  endereco: ["criar", "ler", "atualizar", "deletar"],
+  upload: ["criar"],
+  dashboard: ["ler"],
+};
+
+const ROLES: { nome: string; descricao: string; permissoes: string[] | "todas" }[] = [
+  {
+    nome: "admin",
+    descricao: "Acesso total ao sistema.",
+    permissoes: "todas",
+  },
+  {
+    nome: "cliente",
+    descricao: "Compra pela loja e gerencia os proprios dados.",
+    permissoes: [
+      "produto:ler",
+      "categoria:ler",
+      "pedido:criar",
+      "pedido:ler",
+      "pedido:atualizar",
+      "endereco:criar",
+      "endereco:ler",
+      "endereco:atualizar",
+      "endereco:deletar",
+      "cliente:ler",
+      "cliente:atualizar",
+    ],
+  },
+];
 
 const CATEGORIAS = [
   { nome: "Processadores", descricao: "CPUs para desktop" },
@@ -43,16 +101,14 @@ const PRODUTOS = [
 async function semearClientes(): Promise<void> {
   const senhaCriptografada = await bcrypt.hash(SENHA_PADRAO, 10);
 
-  const contas = [
-    { nome: "Administrador PC Forge", email: "admin@pcforge.com", cpf: "111.111.111-11", admin: true },
-    { nome: "Cliente Teste", email: "cliente@pcforge.com", cpf: "222.222.222-22", admin: false },
-  ];
+  for (const conta of CONTAS) {
+    // `role` fica fora do defaults: e do vinculo em cliente_role, nao da tabela cliente.
+    const { role: _role, ...dadosDaConta } = conta;
 
-  for (const conta of contas) {
     const [, criado] = await Cliente.findOrCreate({
       where: { email: conta.email },
       defaults: {
-        ...conta,
+        ...dadosDaConta,
         senha: senhaCriptografada,
         telefone: "(11) 90000-0000",
         ativo: true,
@@ -60,6 +116,66 @@ async function semearClientes(): Promise<void> {
     });
 
     console.log(`${criado ? "criado" : "ja existia"}: ${conta.email}${conta.admin ? " (admin)" : ""}`);
+  }
+}
+
+/**
+ * Papeis, permissoes e os vinculos N:N do RBAC.
+ *
+ * Roda DEPOIS de semearClientes porque precisa das duas contas ja gravadas
+ * para preencher cliente_role.
+ */
+async function semearRbac(): Promise<void> {
+  const idsPorPermissao = new Map<string, number>();
+
+  for (const [recurso, acoes] of Object.entries(PERMISSOES_POR_RECURSO)) {
+    for (const acao of acoes) {
+      const nome = `${recurso}:${acao}`;
+      const [registro] = await Permissao.findOrCreate({
+        where: { nome },
+        defaults: { nome, recurso, acao, descricao: `Permite ${acao} em ${recurso}.` },
+      });
+
+      idsPorPermissao.set(nome, registro.id_permissao);
+    }
+  }
+
+  console.log(`permissoes: ${idsPorPermissao.size}`);
+
+  for (const papel of ROLES) {
+    const [role] = await Role.findOrCreate({
+      where: { nome: papel.nome },
+      defaults: { nome: papel.nome, descricao: papel.descricao },
+    });
+
+    // "admin" recebe tudo; os demais, so a lista declarada em ROLES.
+    const permissoesDoPapel =
+      papel.permissoes === "todas" ? [...idsPorPermissao.keys()] : papel.permissoes;
+
+    for (const nomePermissao of permissoesDoPapel) {
+      const idPermissao = idsPorPermissao.get(nomePermissao);
+      if (!idPermissao) continue;
+
+      await RolePermissao.findOrCreate({
+        where: { id_role: role.id_role, id_permissao: idPermissao },
+        defaults: { id_role: role.id_role, id_permissao: idPermissao },
+      });
+    }
+
+    console.log(`role ${papel.nome}: ${permissoesDoPapel.length} permissoes`);
+
+    // Vincula as contas do seed que pedem este papel.
+    for (const conta of CONTAS.filter((c) => c.role === papel.nome)) {
+      const cliente = await Cliente.findOne({ where: { email: conta.email } });
+      if (!cliente) continue;
+
+      await ClienteRole.findOrCreate({
+        where: { id_cliente: cliente.id_cliente, id_role: role.id_role },
+        defaults: { id_cliente: cliente.id_cliente, id_role: role.id_role },
+      });
+
+      console.log(`  ${conta.email} -> ${papel.nome}`);
+    }
   }
 }
 
@@ -105,6 +221,7 @@ async function seed(): Promise<void> {
   await sequelize.sync();
 
   await semearClientes();
+  await semearRbac();
   await semearCatalogo();
 
   console.log(`\nSeed concluido. Senha das duas contas: ${SENHA_PADRAO}`);

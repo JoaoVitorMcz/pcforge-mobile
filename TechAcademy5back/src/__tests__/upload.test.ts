@@ -10,6 +10,12 @@ jest.mock("../config/auth.middleware", () => ({
     next();
   },
   adminMiddleware: (_req: Request, _res: Response, next: NextFunction) => next(),
+  authorizeRole:
+    (_roles?: string[]) => (_req: Request, _res: Response, next: NextFunction) =>
+      next(),
+  authorizePermission:
+    (_permissoes?: string[]) => (_req: Request, _res: Response, next: NextFunction) =>
+      next(),
   selfOrAdminMiddleware:
     (_paramName?: string) => (_req: Request, _res: Response, next: NextFunction) =>
       next(),

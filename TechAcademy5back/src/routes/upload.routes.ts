@@ -1,13 +1,13 @@
 import { Router, Request, Response } from "express";
 import { upload } from "../config/upload";
-import { authMiddleware, adminMiddleware } from "../config/auth.middleware";
+import { authMiddleware, authorizeRole } from "../config/auth.middleware";
 
 const router = Router();
 
 router.post(
   "/imagem",
   authMiddleware,
-  adminMiddleware,
+  authorizeRole(["admin"]),
   upload.single("imagem"),
   (req: Request, res: Response) => {
     if (!req.file) {
