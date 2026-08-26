@@ -107,9 +107,13 @@ custo-benefício em aberto e não depende de nenhuma das fases acima.
 - **Bloco de E2E em `.husky/pre-push` (linhas 13-20).** Remover: o E2E roda no CI, então
   não se perde cobertura, e o hook trava o push enquanto espera o dev server do CRA
   subir.
-- **`main` desatualizada e com regressões.** Ficou para trás da `dev` e reintroduz
-  problemas já corrigidos. Foi decisão consciente aguardar alinhamento da dupla antes de
-  atualizar, mas não deve ir para a entrega assim.
+- **`main` desatualizada.** Está 9 commits atrás da `dev`. **Não há merge a resolver**:
+  depois de `bceb4e0` a `main` virou ancestral da `dev`, então atualizar é um
+  fast-forward de risco zero.
+  O que continua valendo é o estado do conteúdo dela hoje: sem CORS, com o teste de
+  upload que apaga `uploads/` real e com `MYSQL_USER=root` no `.env.example` — ou seja,
+  quem clonar a `main` não consegue nem subir o banco. Foi decisão consciente aguardar
+  alinhamento da dupla, mas não deve ir para a entrega assim.
 - **Acesso do celular pela LAN nunca testado num aparelho real.** O bundle compila e a
   API responde pelo IP da máquina, mas ninguém abriu o app em um telefone. Se não
   conectar, o primeiro suspeito é o firewall: o Wi-Fi está no perfil **Público**, onde o
