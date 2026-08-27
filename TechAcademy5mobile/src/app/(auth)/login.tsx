@@ -4,7 +4,9 @@ import { Link, useRouter } from "expo-router";
 import { Botao } from "@/components/Botao";
 import { CampoTexto } from "@/components/CampoTexto";
 import { useAuth } from "@/contexts/AuthContext";
+import { ApiError } from "@/services/api";
 import { cores, espaco, fonte } from "@/theme";
+import { emailValido } from "@/validacao";
 
 export default function Login() {
   const { entrar } = useAuth();
@@ -12,23 +14,45 @@ export default function Login() {
 
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
+  const [erros, setErros] = useState<{ email?: string; senha?: string }>({});
   const [erro, setErro] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
 
   const aoEntrar = async () => {
-    if (!email.trim() || !senha) {
-      setErro("Informe e-mail e senha.");
+    const emailNormalizado = email.trim();
+    const novosErros: { email?: string; senha?: string } = {};
+
+    if (!emailNormalizado) {
+      novosErros.email = "Informe seu e-mail.";
+    } else if (!emailValido(emailNormalizado)) {
+      novosErros.email = "Informe um e-mail válido.";
+    }
+
+    if (!senha) {
+      novosErros.senha = "Informe sua senha.";
+    }
+
+    if (Object.keys(novosErros).length > 0) {
+      setErros(novosErros);
+      setErro(null);
       return;
     }
 
+    setErros({});
     setErro(null);
     setEnviando(true);
 
     try {
-      await entrar(email.trim(), senha);
+      await entrar(emailNormalizado, senha);
       router.replace("/(loja)");
     } catch (e) {
-      setErro(e instanceof Error ? e.message : "Nao foi possivel entrar.");
+      if (e instanceof ApiError && e.status === 401) {
+        setErro("E-mail ou senha incorretos.");
+      } else if (e instanceof TypeError) {
+        setErro("Não foi possível conectar ao servidor.");
+      } else {
+        setErro(e instanceof Error ? e.message : "Não foi possível entrar.");
+      }
     } finally {
       setEnviando(false);
     }
@@ -40,36 +64,46 @@ export default function Login() {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <ScrollView contentContainerStyle={estilos.conteudo} keyboardShouldPersistTaps="handled">
-        <Text style={estilos.titulo}>PC Forge</Text>
-        <Text style={estilos.subtitulo}>Componentes para o seu setup</Text>
+        <View style={estilos.formulario}>
+          <Text style={estilos.titulo}>PC Forge</Text>
+          <Text style={estilos.subtitulo}>Componentes para o seu setup</Text>
 
-        <CampoTexto
-          rotulo="E-mail"
-          value={email}
-          onChangeText={setEmail}
-          autoCapitalize="none"
-          keyboardType="email-address"
-          autoComplete="email"
-          placeholder="voce@exemplo.com"
-        />
+          <CampoTexto
+            rotulo="E-mail"
+            value={email}
+            onChangeText={(valor) => {
+              setEmail(valor);
+              if (erros.email) setErros((atual) => ({ ...atual, email: undefined }));
+            }}
+            erro={erros.email}
+            autoCapitalize="none"
+            keyboardType="email-address"
+            autoComplete="email"
+            placeholder="voce@exemplo.com"
+          />
 
-        <CampoTexto
-          rotulo="Senha"
-          value={senha}
-          onChangeText={setSenha}
-          secureTextEntry
-          placeholder="Sua senha"
-        />
+          <CampoTexto
+            rotulo="Senha"
+            value={senha}
+            onChangeText={(valor) => {
+              setSenha(valor);
+              if (erros.senha) setErros((atual) => ({ ...atual, senha: undefined }));
+            }}
+            erro={erros.senha}
+            secureTextEntry
+            placeholder="Sua senha"
+          />
 
-        {!!erro && <Text style={estilos.erro}>{erro}</Text>}
+          {!!erro && <Text style={estilos.erro}>{erro}</Text>}
 
-        <Botao titulo="Entrar" aoPressionar={aoEntrar} carregando={enviando} />
+          <Botao titulo="Entrar" aoPressionar={aoEntrar} carregando={enviando} />
 
-        <View style={estilos.rodape}>
-          <Text style={estilos.rodapeTexto}>Ainda nao tem conta? </Text>
-          <Link href="/(auth)/cadastro" style={estilos.link}>
-            Cadastre-se
-          </Link>
+          <View style={estilos.rodape}>
+            <Text style={estilos.rodapeTexto}>Ainda nao tem conta? </Text>
+            <Link href="/(auth)/cadastro" style={estilos.link}>
+              Cadastre-se
+            </Link>
+          </View>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -85,6 +119,16 @@ const estilos = StyleSheet.create({
     flexGrow: 1,
     justifyContent: "center",
     padding: espaco.lg,
+    alignItems: "center",
+  },
+  formulario: {
+    width: "100%",
+    maxWidth: 480,
+    padding: espaco.xl,
+    borderWidth: 1,
+    borderColor: cores.borda,
+    borderRadius: 20,
+    backgroundColor: cores.superficie,
   },
   titulo: {
     color: cores.primaria,

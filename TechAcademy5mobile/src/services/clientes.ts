@@ -20,3 +20,7 @@ export const login = (email: string, senha: string): Promise<RespostaLogin> =>
 
 export const cadastrar = (dados: DadosCadastro): Promise<Cliente> =>
   requisitar<Cliente>("/clientes", { metodo: "POST", corpo: dados });
+
+/** Lista de clientes usada exclusivamente pela área administrativa. */
+export const listarClientes = (token: string): Promise<Cliente[]> =>
+  requisitar<Cliente[]>("/clientes", { token });
