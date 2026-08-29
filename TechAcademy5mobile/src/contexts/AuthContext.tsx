@@ -1,10 +1,32 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { Platform } from "react-native";
 import * as SecureStore from "expo-secure-store";
 import { login as loginNaApi } from "@/services/clientes";
 import type { Cliente } from "@/types";
 
 const CHAVE_TOKEN = "pcforge.token";
 const CHAVE_CLIENTE = "pcforge.cliente";
+
+const lerSessao = async (chave: string): Promise<string | null> =>
+  Platform.OS === "web" ? localStorage.getItem(chave) : SecureStore.getItemAsync(chave);
+
+const salvarSessao = async (chave: string, valor: string): Promise<void> => {
+  if (Platform.OS === "web") {
+    localStorage.setItem(chave, valor);
+    return;
+  }
+
+  await SecureStore.setItemAsync(chave, valor);
+};
+
+const removerSessao = async (chave: string): Promise<void> => {
+  if (Platform.OS === "web") {
+    localStorage.removeItem(chave);
+    return;
+  }
+
+  await SecureStore.deleteItemAsync(chave);
+};
 
 interface AuthContextValue {
   cliente: Cliente | null;
@@ -39,8 +61,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     (async () => {
       try {
         const [tokenSalvo, clienteSalvo] = await Promise.all([
-          SecureStore.getItemAsync(CHAVE_TOKEN),
-          SecureStore.getItemAsync(CHAVE_CLIENTE),
+          lerSessao(CHAVE_TOKEN),
+          lerSessao(CHAVE_CLIENTE),
         ]);
 
         if (tokenSalvo && clienteSalvo) {
@@ -59,8 +81,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const resposta = await loginNaApi(email, senha);
 
     await Promise.all([
-      SecureStore.setItemAsync(CHAVE_TOKEN, resposta.token),
-      SecureStore.setItemAsync(CHAVE_CLIENTE, JSON.stringify(resposta.cliente)),
+      salvarSessao(CHAVE_TOKEN, resposta.token),
+      salvarSessao(CHAVE_CLIENTE, JSON.stringify(resposta.cliente)),
     ]);
 
     setToken(resposta.token);
@@ -69,8 +91,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const sair = useCallback(async () => {
     await Promise.all([
-      SecureStore.deleteItemAsync(CHAVE_TOKEN),
-      SecureStore.deleteItemAsync(CHAVE_CLIENTE),
+      removerSessao(CHAVE_TOKEN),
+      removerSessao(CHAVE_CLIENTE),
     ]);
 
     setToken(null);

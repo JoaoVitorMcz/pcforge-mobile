@@ -15,7 +15,16 @@ import Constants from "expo-constants";
 const PORTA_API = 3000;
 
 const hostDoDevServer = Constants.expoConfig?.hostUri?.split(":")[0];
+const hostDoNavegador =
+  typeof window !== "undefined" ? window.location.hostname : undefined;
+const apiDoNavegador =
+  hostDoNavegador === "pcforge.local"
+    ? `${window.location.protocol}//${window.location.host}`
+    : hostDoNavegador
+      ? `http://${hostDoNavegador}:${PORTA_API}`
+      : undefined;
 
 export const API_BASE_URL =
   process.env.EXPO_PUBLIC_API_URL ??
+  apiDoNavegador ??
   (hostDoDevServer ? `http://${hostDoDevServer}:${PORTA_API}` : `http://localhost:${PORTA_API}`);

@@ -61,6 +61,8 @@ services:
       - HOST=0.0.0.0
       - DANGEROUSLY_DISABLE_HOST_CHECK=true
       - REACT_APP_API_URL=
+    volumes:
+      - ./TechAcademy5front/public/imagens:/app/public/imagens:ro
     depends_on:
       - backend
     networks:
