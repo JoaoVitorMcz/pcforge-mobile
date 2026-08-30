@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { Transaction } from "sequelize";
 import ItemPedido from "../models/Itempedido";
 import Pedido from "../models/Pedido";
 import Produto from "../models/Produto";
@@ -113,6 +114,45 @@ export const buscarItemPorId = async (req: Request, res: Response): Promise<void
 };
 
 
+/**
+ * Move estoque ao mexer nos itens de um pedido ja criado.
+ *
+ * O pedido baixa o estoque na criacao (pedido.service), entao qualquer
+ * alteracao posterior tem de mover a diferenca: delta positivo consome, delta
+ * negativo devolve. Sem isso, editar itens desencontrava o estoque do que
+ * estava realmente vendido.
+ *
+ * Devolve a mensagem de erro quando nao ha estoque para o aumento, ou null
+ * quando o ajuste foi aplicado.
+ */
+async function ajustarEstoque(
+  idProduto: number,
+  delta: number,
+  transaction: Transaction
+): Promise<string | null> {
+  if (delta === 0) {
+    return null;
+  }
+
+  const produto = await Produto.findByPk(idProduto, { transaction });
+
+  if (!produto) {
+    return "Produto nao encontrado.";
+  }
+
+  if (delta > 0 && Number(produto.estoque ?? 0) < delta) {
+    return `Estoque insuficiente para o produto "${produto.nome}". Disponivel: ${Number(produto.estoque ?? 0)}.`;
+  }
+
+  if (delta > 0) {
+    await Produto.decrement("estoque", { by: delta, where: { id_produto: idProduto }, transaction });
+  } else {
+    await Produto.increment("estoque", { by: -delta, where: { id_produto: idProduto }, transaction });
+  }
+
+  return null;
+}
+
 export const adicionarItem = async (req: Request, res: Response): Promise<void> => {
   const transaction = await sequelize.transaction();
 
@@ -163,6 +203,14 @@ export const adicionarItem = async (req: Request, res: Response): Promise<void> 
       where: { id_pedido, id_produto: Number(id_produto) },
       transaction,
     });
+
+    const erroEstoque = await ajustarEstoque(Number(id_produto), Number(quantidade), transaction);
+
+    if (erroEstoque) {
+      await transaction.rollback();
+      res.status(409).json({ mensagem: erroEstoque });
+      return;
+    }
 
     let item: ItemPedido;
 
@@ -245,6 +293,18 @@ export const atualizarQuantidadeItem = async (req: Request, res: Response): Prom
       return;
     }
 
+    const erroEstoque = await ajustarEstoque(
+      item.id_produto,
+      Number(quantidade) - item.quantidade,
+      transaction
+    );
+
+    if (erroEstoque) {
+      await transaction.rollback();
+      res.status(409).json({ mensagem: erroEstoque });
+      return;
+    }
+
     await item.update({ quantidade: Number(quantidade) }, { transaction });
 
     const todosItens = await ItemPedido.findAll({ where: { id_pedido: item.id_pedido }, transaction });
@@ -301,6 +361,7 @@ export const removerItem = async (req: Request, res: Response): Promise<void> =>
       return;
     }
 
+    await ajustarEstoque(item.id_produto, -item.quantidade, transaction);
     await item.destroy({ transaction });
 
     const itensRestantes = await ItemPedido.findAll({ where: { id_pedido: item.id_pedido }, transaction });

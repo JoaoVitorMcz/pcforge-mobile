@@ -6,6 +6,23 @@ import Cliente from "../models/Cliente";
 import Endereco from "../models/Endereco";
 import { buildPaginatedResponse, getPaginationParams } from "../utils/pagination";
 import { criarPedidoComItens, HttpError } from "../services/pedido.service";
+import sequelize from "../config/database";
+
+/**
+ * Transicoes de status que o pedido aceita.
+ *
+ * Sem isto o handler so conferia se o status existia na lista, entao um pedido
+ * "entregue" podia voltar para "pendente" e um "cancelado" podia ser revivido.
+ * "entregue" e "cancelado" sao terminais: nada sai deles.
+ */
+const TRANSICOES_DE_STATUS: Record<string, string[]> = {
+  pendente: ["pago", "cancelado"],
+  pago: ["em_preparacao", "cancelado"],
+  em_preparacao: ["enviado", "cancelado"],
+  enviado: ["entregue"],
+  entregue: [],
+  cancelado: [],
+};
 
 const getClienteAutenticado = (req: Request, res: Response) => {
   if (!req.cliente) {
@@ -217,22 +234,11 @@ export const atualizarStatusPedido = async (req: Request, res: Response): Promis
       return;
     }
 
-    if (!clienteLogado.admin) {
-      res.status(403).json({ mensagem: "Acesso restrito a administradores." });
-      return;
-    }
-
     const id_pedido = Number(req.params.id);
     const { status, data_pagamento } = req.body;
 
-    const statusValidos = [
-      "pendente",
-      "pago",
-      "em_preparacao",
-      "enviado",
-      "entregue",
-      "cancelado",
-    ];
+    // Derivado da maquina de estados para as duas listas nao divergirem.
+    const statusValidos = Object.keys(TRANSICOES_DE_STATUS);
 
     if (!status || !statusValidos.includes(status)) {
       res.status(400).json({
@@ -245,6 +251,18 @@ export const atualizarStatusPedido = async (req: Request, res: Response): Promis
 
     if (!pedido) {
       res.status(404).json({ mensagem: "Pedido nao encontrado." });
+      return;
+    }
+
+    const statusAtual = pedido.status ?? "pendente";
+    const destinosPermitidos = TRANSICOES_DE_STATUS[statusAtual] ?? [];
+
+    if (status !== statusAtual && !destinosPermitidos.includes(status)) {
+      res.status(409).json({
+        mensagem: destinosPermitidos.length
+          ? `Nao e possivel mudar de "${statusAtual}" para "${status}". Transicoes validas: ${destinosPermitidos.join(", ")}.`
+          : `Pedido com status "${statusAtual}" e final e nao aceita mudanca de status.`,
+      });
       return;
     }
 
@@ -294,7 +312,29 @@ export const cancelarPedido = async (req: Request, res: Response): Promise<void>
       return;
     }
 
-    await pedido.update({ status: "cancelado" });
+    // Devolver o estoque e o cancelamento tem de acontecer juntos: se a
+    // devolucao falhasse depois do update, o produto ficaria com estoque preso
+    // num pedido que nao existe mais. A guarda de statusNaoCancelaveis acima
+    // impede cancelar duas vezes e devolver em dobro.
+    const transaction = await sequelize.transaction();
+
+    try {
+      const itens = await ItemPedido.findAll({ where: { id_pedido }, transaction });
+
+      for (const item of itens) {
+        await Produto.increment("estoque", {
+          by: item.quantidade,
+          where: { id_produto: item.id_produto },
+          transaction,
+        });
+      }
+
+      await pedido.update({ status: "cancelado" }, { transaction });
+      await transaction.commit();
+    } catch (erroCancelamento) {
+      await transaction.rollback();
+      throw erroCancelamento;
+    }
 
     res.status(200).json({ mensagem: "Pedido cancelado com sucesso." });
   } catch (error) {

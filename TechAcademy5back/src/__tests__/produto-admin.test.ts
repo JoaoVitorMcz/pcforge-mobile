@@ -1,12 +1,20 @@
 import { Request, Response } from "express";
 import Produto from "../models/Produto";
 import { criarProduto, atualizarProduto, desativarProduto } from "../controllers/produto.controller";
-import { authMiddleware, adminMiddleware } from "../config/auth.middleware";
 import { TokenPayload } from "../config/jwt";
 
 jest.mock("../models/Produto");
 jest.mock("../config/auth.middleware");
 jest.mock("../config/jwt");
+
+// O modulo de middleware esta auto-mockado acima, entao authorizeRole viria
+// como jest.fn() e nao decidiria nada. Para o teste 18 provar o bloqueio de
+// verdade, pega-se a implementacao real.
+const { authorizeRole } = jest.requireActual<typeof import("../config/auth.middleware")>(
+  "../config/auth.middleware"
+);
+
+const mockNext = jest.fn();
 
 const mockRequest = (body = {}, params = {}, headers = {}): Partial<Request> => ({
   body,
@@ -78,10 +86,16 @@ describe("Produto CRUD - Controle de Acesso Admin", () => {
 
       const res = mockResponse();
 
-      // Simula bloqueio por adminMiddleware (que deveria estar na rota)
-      // Este teste documenta o comportamento esperado
-      expect(req.cliente?.admin).toBe(false);
-      // A rota deveria ter chamado adminMiddleware antes de chamar o controller
+      // A rota tem authorizeRole(["admin"]) antes do controller: o middleware
+      // barra e criarProduto nunca chega a rodar.
+      authorizeRole(["admin"])(req, res as Response, mockNext);
+
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(res.json).toHaveBeenCalledWith({
+        mensagem: "Permissoes insuficientes para acessar este recurso.",
+      });
+      expect(mockNext).not.toHaveBeenCalled();
+      expect(Produto.create).not.toHaveBeenCalled();
     });
 
     it("19. Rejeita criação sem campos obrigatórios", async () => {

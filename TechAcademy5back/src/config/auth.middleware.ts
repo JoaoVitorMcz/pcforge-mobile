@@ -99,7 +99,16 @@ export const authorizePermission =
       return;
     }
 
-    const permissoesDoCliente = req.cliente.permissoes ?? [];
+    // Token emitido antes desta rota exigir permissao nao carrega a claim.
+    // Ausente (undefined) significa "token legado": cai no papel, como
+    // extrairRoles ja faz com o boolean. Lista vazia e diferente — quer dizer
+    // que o token e novo e o usuario realmente nao tem permissao alguma.
+    if (req.cliente.permissoes === undefined) {
+      next();
+      return;
+    }
+
+    const permissoesDoCliente = req.cliente.permissoes;
 
     if (!permissoesExigidas.every((permissao) => permissoesDoCliente.includes(permissao))) {
       res.status(403).json({ mensagem: "Permissoes insuficientes para acessar este recurso." });
@@ -108,22 +117,6 @@ export const authorizePermission =
 
     next();
   };
-
-/**
- * Atalho legado de authorizeRole(["admin"]), mantido exportado por compatibilidade.
- * Difere num ponto: responde 403 (nao 401) quando nao ha usuario autenticado.
- * Rotas novas devem usar authorizeRole.
- */
-export const adminMiddleware = (req: Request, res: Response, next: NextFunction): void => {
-  const ehAdmin = req.cliente ? extrairRoles(req.cliente).includes("admin") : false;
-
-  if (!ehAdmin) {
-    res.status(403).json({ mensagem: "Acesso restrito a administradores." });
-    return;
-  }
-
-  next();
-};
 
 export const selfOrAdminMiddleware =
   (paramName = "id") =>

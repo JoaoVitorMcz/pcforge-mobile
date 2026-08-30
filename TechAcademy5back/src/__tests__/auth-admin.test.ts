@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { authMiddleware, adminMiddleware, selfOrAdminMiddleware } from "../config/auth.middleware";
+import { authMiddleware, authorizeRole, selfOrAdminMiddleware } from "../config/auth.middleware";
 import jwt from "jsonwebtoken";
 import type { JwtPayload } from "jsonwebtoken";
 import { getJwtSecret, TokenPayload } from "../config/jwt";
@@ -97,30 +97,31 @@ describe("Auth Middleware - Autenticação e Autorização Admin", () => {
     });
   });
 
-  describe("adminMiddleware", () => {
+  describe("authorizeRole com papel admin", () => {
     it("6. Bloqueia usuário sem admin flag", () => {
       const req = mockRequest() as Request;
       req.cliente = { id_cliente: 2, email: "user@test.com", admin: false };
       const res = mockResponse() as Response;
 
-      adminMiddleware(req, res, mockNext);
+      authorizeRole(["admin"])(req, res, mockNext);
 
       expect(res.status).toHaveBeenCalledWith(403);
       expect(res.json).toHaveBeenCalledWith({
-        mensagem: "Acesso restrito a administradores.",
+        mensagem: "Permissoes insuficientes para acessar este recurso.",
       });
     });
 
-    it("7. Bloqueia requisição sem req.cliente", () => {
+    it("7. Bloqueia requisição sem req.cliente com 401, nao 403", () => {
       const req = mockRequest() as Request;
       const res = mockResponse() as Response;
 
-      adminMiddleware(req, res, mockNext);
+      // Ordem invertida (autorizacao antes da autenticacao): req.cliente ainda
+      // nao existe. E falta de autenticacao, por isso 401 e nao 403.
+      authorizeRole(["admin"])(req, res, mockNext);
 
-      expect(res.status).toHaveBeenCalledWith(403);
-      expect(res.json).toHaveBeenCalledWith({
-        mensagem: "Acesso restrito a administradores.",
-      });
+      expect(res.status).toHaveBeenCalledWith(401);
+      expect(res.json).toHaveBeenCalledWith({ mensagem: "Usuario nao autenticado." });
+      expect(mockNext).not.toHaveBeenCalled();
     });
 
     it("8. Permite acesso a usuário admin", () => {
@@ -128,7 +129,7 @@ describe("Auth Middleware - Autenticação e Autorização Admin", () => {
       req.cliente = { id_cliente: 1, email: "admin@test.com", admin: true };
       const res = mockResponse() as Response;
 
-      adminMiddleware(req, res, mockNext);
+      authorizeRole(["admin"])(req, res, mockNext);
 
       expect(mockNext).toHaveBeenCalled();
     });
@@ -225,8 +226,8 @@ describe("Auth Middleware - Autenticação e Autorização Admin", () => {
       authMiddleware(req, res, mockNext);
       expect(req.cliente?.admin).toBe(true);
 
-      // Simula passagem por adminMiddleware
-      adminMiddleware(req, res, mockNext);
+      // Simula passagem por authorizeRole(["admin"])
+      authorizeRole(["admin"])(req, res, mockNext);
       expect(mockNext).toHaveBeenCalled();
     });
 
@@ -250,9 +251,9 @@ describe("Auth Middleware - Autenticação e Autorização Admin", () => {
       authMiddleware(req, res, mockNext);
       expect(req.cliente?.admin).toBe(false);
 
-      // Bloqueado por adminMiddleware
+      // Bloqueado por authorizeRole(["admin"])
       jest.clearAllMocks();
-      adminMiddleware(req, res, mockNext);
+      authorizeRole(["admin"])(req, res, mockNext);
       expect(res.status).toHaveBeenCalledWith(403);
       expect(mockNext).not.toHaveBeenCalled();
     });
