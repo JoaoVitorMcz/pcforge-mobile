@@ -49,12 +49,12 @@ erDiagram
         string descricao
     }
     cliente_role {
-        int id_cliente PK_FK
-        int id_role PK_FK
+        int id_cliente PK,FK
+        int id_role PK,FK
     }
     role_permissao {
-        int id_role PK_FK
-        int id_permissao PK_FK
+        int id_role PK,FK
+        int id_permissao PK,FK
     }
 ```
 
