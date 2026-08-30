@@ -1,7 +1,7 @@
 import { Stack } from "expo-router";
 import { cores } from "@/theme";
 
-export default function LayoutEnderecos() {
+export default function LayoutProdutos() {
   return (
     <Stack
       screenOptions={{
@@ -10,8 +10,9 @@ export default function LayoutEnderecos() {
         contentStyle: { backgroundColor: cores.fundo },
       }}
     >
-      <Stack.Screen name="index" options={{ title: "Meus endereços" }} />
-      <Stack.Screen name="[id]" options={{ title: "Endereço" }} />
+      <Stack.Screen name="index" options={{ title: "Produtos" }} />
+      <Stack.Screen name="novo" options={{ title: "Novo produto" }} />
+      <Stack.Screen name="[id]" options={{ title: "Editar produto" }} />
     </Stack>
   );
 }

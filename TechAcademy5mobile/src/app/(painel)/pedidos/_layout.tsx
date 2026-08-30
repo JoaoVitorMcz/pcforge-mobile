@@ -1,7 +1,7 @@
 import { Stack } from "expo-router";
 import { cores } from "@/theme";
 
-export default function LayoutAuth() {
+export default function LayoutPedidos() {
   return (
     <Stack
       screenOptions={{
@@ -10,7 +10,8 @@ export default function LayoutAuth() {
         contentStyle: { backgroundColor: cores.fundo },
       }}
     >
-      <Stack.Screen name="login" options={{ title: "Entrar", headerShown: false }} />
+      <Stack.Screen name="index" options={{ title: "Pedidos" }} />
+      <Stack.Screen name="[id]" options={{ title: "Detalhe do pedido" }} />
     </Stack>
   );
 }
