@@ -193,6 +193,39 @@ async function semearRbac(): Promise<void> {
       console.log(`  ${conta.email} -> ${papel.nome}`);
     }
   }
+
+  await vincularClientesSemPapel();
+}
+
+/**
+ * Da o papel "cliente" a quem ficou sem nenhum.
+ *
+ * Ate a correcao no criarCliente, so o seed escrevia em cliente_role, entao
+ * todo mundo que se cadastrou pela API ficou sem papel e com o token sem
+ * permissoes. Isto conserta as bases que ja existem; o cadastro novo ja nasce
+ * vinculado.
+ */
+async function vincularClientesSemPapel(): Promise<void> {
+  const roleCliente = await Role.findOne({ where: { nome: "cliente" } });
+
+  if (!roleCliente) {
+    return;
+  }
+
+  const vinculos = await ClienteRole.findAll({ attributes: ["id_cliente"] });
+  const jaTemPapel = new Set(vinculos.map((vinculo) => vinculo.id_cliente));
+
+  const clientes = await Cliente.findAll({ attributes: ["id_cliente", "email"] });
+  const orfaos = clientes.filter((cliente) => !jaTemPapel.has(cliente.id_cliente));
+
+  for (const cliente of orfaos) {
+    await ClienteRole.create({ id_cliente: cliente.id_cliente, id_role: roleCliente.id_role });
+    console.log(`  ${cliente.email} -> cliente (retroativo)`);
+  }
+
+  if (orfaos.length === 0) {
+    console.log("nenhum cliente sem papel");
+  }
 }
 
 async function semearCatalogo(): Promise<void> {

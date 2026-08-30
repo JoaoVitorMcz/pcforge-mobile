@@ -5,6 +5,7 @@ import jwt from "jsonwebtoken";
 import Cliente from "../models/Cliente";
 import Role from "../models/Role";
 import Permissao from "../models/Permissao";
+import ClienteRole from "../models/ClienteRole";
 import { getJwtSecret } from "../config/jwt";
 import { buildPaginatedResponse, getPaginationParams } from "../utils/pagination";
 import {
@@ -67,6 +68,33 @@ export const buscarClientePorId = async (req: Request, res: Response): Promise<v
   }
 };
 
+/**
+ * Vincula o cliente recem-criado ao seu papel no RBAC.
+ *
+ * Sem isso so o seed escrevia em cliente_role: quem se cadastrava pela API
+ * ficava sem papel e recebia um token com permissoes vazias, o que barra
+ * qualquer rota protegida por authorizePermission.
+ *
+ * Nao derruba o cadastro se o papel nao existir (banco ainda sem seed): o
+ * cliente continua valido e o fallback pelo boolean admin cobre o acesso.
+ */
+const vincularPapelPadrao = async (idCliente: number, ehAdmin: boolean): Promise<void> => {
+  try {
+    const role = await Role.findOne({ where: { nome: ehAdmin ? "admin" : "cliente" } });
+
+    if (!role) {
+      return;
+    }
+
+    await ClienteRole.findOrCreate({
+      where: { id_cliente: idCliente, id_role: role.id_role },
+      defaults: { id_cliente: idCliente, id_role: role.id_role },
+    });
+  } catch (error) {
+    console.error("Falha ao vincular o papel padrao ao cliente:", error);
+  }
+};
+
 export const criarCliente = async (req: Request, res: Response): Promise<void> => {
   try {
     const { nome, email, senha, telefone, cpf, admin } = req.body;
@@ -123,6 +151,8 @@ export const criarCliente = async (req: Request, res: Response): Promise<void> =
       ativo: true,
       admin: isAdmin,
     });
+
+    await vincularPapelPadrao(novoCliente.id_cliente, isAdmin);
 
     const { senha: _senha, ...clienteSemSenha } = novoCliente.toJSON();
 

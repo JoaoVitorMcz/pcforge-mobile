@@ -20,6 +20,9 @@ jest.mock("../models/Produto", () => ({
   __esModule: true,
   default: {
     findOne: jest.fn(),
+    findByPk: jest.fn(),
+    decrement: jest.fn(),
+    increment: jest.fn(),
   },
 }));
 jest.mock("../config/database", () => ({
@@ -123,6 +126,7 @@ describe("itempedido.controller", () => {
       update: jest.fn().mockResolvedValue(true),
     });
     (Produto.findOne as jest.Mock).mockResolvedValue({ id_produto: 1 });
+    (Produto.findByPk as jest.Mock).mockResolvedValue({ id_produto: 1, nome: "RTX 4070", estoque: 10 });
     (ItemPedido.findOne as jest.Mock).mockResolvedValue(null);
     (ItemPedido.create as jest.Mock).mockResolvedValue({ id_item: 1, id_pedido: 1 });
     (ItemPedido.findAll as jest.Mock).mockResolvedValue([{ quantidade: 2, preco_unitario: 100 }]);
@@ -139,6 +143,12 @@ describe("itempedido.controller", () => {
 
     expect(res.status).toHaveBeenCalledWith(201);
     expect(transactionMock.commit).toHaveBeenCalled();
+    // O pedido ja baixou estoque na criacao, entao o item novo consome a
+    // quantidade adicionada.
+    expect(Produto.decrement).toHaveBeenCalledWith(
+      "estoque",
+      expect.objectContaining({ by: 2, where: { id_produto: 1 } })
+    );
   });
 
   it("5. atualiza quantidade do item", async () => {
@@ -146,6 +156,8 @@ describe("itempedido.controller", () => {
     (sequelize.transaction as jest.Mock).mockResolvedValue(transactionMock);
     const itemMock = {
       id_pedido: 1,
+      id_produto: 1,
+      quantidade: 1,
       update: jest.fn().mockResolvedValue(true),
     };
     const pedidoMock = {
@@ -156,6 +168,7 @@ describe("itempedido.controller", () => {
     (ItemPedido.findByPk as jest.Mock).mockResolvedValue(itemMock);
     (Pedido.findByPk as jest.Mock).mockResolvedValue(pedidoMock);
     (ItemPedido.findAll as jest.Mock).mockResolvedValue([{ quantidade: 3, preco_unitario: 100 }]);
+    (Produto.findByPk as jest.Mock).mockResolvedValue({ id_produto: 1, nome: "RTX 4070", estoque: 10 });
 
     const req = mockRequest(
       { quantidade: 3 },
@@ -168,6 +181,11 @@ describe("itempedido.controller", () => {
     await atualizarQuantidadeItem(req as Request, res as Response);
 
     expect(res.status).toHaveBeenCalledWith(200);
+    // De 1 para 3: so a diferenca sai do estoque, nao a quantidade inteira.
+    expect(Produto.decrement).toHaveBeenCalledWith(
+      "estoque",
+      expect.objectContaining({ by: 2, where: { id_produto: 1 } })
+    );
   });
 
   it("6. remove item com sucesso", async () => {
@@ -175,6 +193,8 @@ describe("itempedido.controller", () => {
     (sequelize.transaction as jest.Mock).mockResolvedValue(transactionMock);
     const itemMock = {
       id_pedido: 1,
+      id_produto: 1,
+      quantidade: 2,
       destroy: jest.fn().mockResolvedValue(true),
     };
     const pedidoMock = {
@@ -185,6 +205,7 @@ describe("itempedido.controller", () => {
     (ItemPedido.findByPk as jest.Mock).mockResolvedValue(itemMock);
     (Pedido.findByPk as jest.Mock).mockResolvedValue(pedidoMock);
     (ItemPedido.findAll as jest.Mock).mockResolvedValue([]);
+    (Produto.findByPk as jest.Mock).mockResolvedValue({ id_produto: 1, nome: "RTX 4070", estoque: 8 });
 
     const req = mockRequest({}, { id: "1" }, {}, { id_cliente: 1, admin: false, email: "teste@teste.com" });
     const res = mockResponse();
@@ -192,5 +213,47 @@ describe("itempedido.controller", () => {
     await removerItem(req as Request, res as Response);
 
     expect(res.status).toHaveBeenCalledWith(200);
+    // Remover o item devolve ao estoque a quantidade que ele reservava.
+    expect(Produto.increment).toHaveBeenCalledWith(
+      "estoque",
+      expect.objectContaining({ by: 2, where: { id_produto: 1 } })
+    );
+  });
+
+  it("7. recusa aumento de quantidade sem estoque, com 409", async () => {
+    const transactionMock = { commit: jest.fn(), rollback: jest.fn() };
+    (sequelize.transaction as jest.Mock).mockResolvedValue(transactionMock);
+    (ItemPedido.findByPk as jest.Mock).mockResolvedValue({
+      id_pedido: 1,
+      id_produto: 1,
+      quantidade: 1,
+      update: jest.fn(),
+    });
+    (Pedido.findByPk as jest.Mock).mockResolvedValue({
+      id_cliente: 1,
+      status: "pendente",
+      update: jest.fn(),
+    });
+    (Produto.findByPk as jest.Mock).mockResolvedValue({
+      id_produto: 1,
+      nome: "RTX 4070",
+      estoque: 1,
+    });
+
+    const req = mockRequest(
+      { quantidade: 5 },
+      { id: "1" },
+      {},
+      { id_cliente: 1, admin: false, email: "teste@teste.com" }
+    );
+    const res = mockResponse();
+
+    await atualizarQuantidadeItem(req as Request, res as Response);
+
+    // Precisaria de mais 4 e so ha 1: nada e gravado e a transacao volta atras.
+    expect(res.status).toHaveBeenCalledWith(409);
+    expect(transactionMock.rollback).toHaveBeenCalled();
+    expect(transactionMock.commit).not.toHaveBeenCalled();
+    expect(Produto.decrement).not.toHaveBeenCalled();
   });
 });

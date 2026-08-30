@@ -9,11 +9,21 @@ jest.mock("../models/Pedido", () => ({
 }));
 jest.mock("../models/Itempedido", () => ({
   __esModule: true,
-  default: {},
+  default: {
+    findAll: jest.fn(),
+  },
 }));
 jest.mock("../models/Produto", () => ({
   __esModule: true,
-  default: {},
+  default: {
+    increment: jest.fn(),
+  },
+}));
+jest.mock("../config/database", () => ({
+  __esModule: true,
+  default: {
+    transaction: jest.fn(),
+  },
 }));
 jest.mock("../models/Cliente", () => ({
   __esModule: true,
@@ -41,6 +51,9 @@ jest.mock("../services/pedido.service", () => {
 });
 
 import Pedido from "../models/Pedido";
+import ItemPedido from "../models/Itempedido";
+import Produto from "../models/Produto";
+import sequelize from "../config/database";
 import {
   atualizarStatusPedido,
   buscarPedidoPorId,
@@ -206,35 +219,75 @@ describe("pedido.controller", () => {
     expect(res.status).toHaveBeenCalledWith(200);
   });
 
-  it("7. bloqueia atualizacao de status para usuario comum", async () => {
+  // A restricao a admin saiu do controller e vive na rota, em
+  // authorizeRole(["admin"]) — coberta por auth-admin e rbac-authorize. O que
+  // cabe aqui e a regra que o controller de fato decide: a transicao de status.
+  it("7. recusa transicao de status invalida com 409", async () => {
+    (Pedido.findByPk as jest.Mock).mockResolvedValue({
+      id_pedido: 1,
+      status: "entregue",
+      update: jest.fn(),
+    });
+
     const req = mockRequest(
-      { status: "pago" },
+      { status: "pendente" },
       { id: "1" },
       {},
-      { id_cliente: 1, admin: false, email: "teste@teste.com" }
+      { id_cliente: 1, admin: true, email: "admin@teste.com" }
     );
     const res = mockResponse();
 
     await atualizarStatusPedido(req as Request, res as Response);
 
-    expect(res.status).toHaveBeenCalledWith(403);
+    expect(res.status).toHaveBeenCalledWith(409);
   });
 
-  it("8. cancela pedido pendente do proprio cliente com sucesso", async () => {
+  it("7b. aceita transicao de status valida", async () => {
+    const pedidoMock = { id_pedido: 1, status: "pendente", update: jest.fn().mockResolvedValue(true) };
+    (Pedido.findByPk as jest.Mock).mockResolvedValue(pedidoMock);
+
+    const req = mockRequest(
+      { status: "pago" },
+      { id: "1" },
+      {},
+      { id_cliente: 1, admin: true, email: "admin@teste.com" }
+    );
+    const res = mockResponse();
+
+    await atualizarStatusPedido(req as Request, res as Response);
+
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(pedidoMock.update).toHaveBeenCalled();
+  });
+
+  it("8. cancela pedido pendente do proprio cliente e devolve o estoque", async () => {
     const pedidoMock = {
       id_cliente: 1,
       status: "pendente",
       update: jest.fn().mockResolvedValue(true),
     };
+    const transactionMock = { commit: jest.fn(), rollback: jest.fn() };
 
     (Pedido.findByPk as jest.Mock).mockResolvedValue(pedidoMock);
+    (sequelize.transaction as jest.Mock).mockResolvedValue(transactionMock);
+    (ItemPedido.findAll as jest.Mock).mockResolvedValue([{ id_produto: 7, quantidade: 3 }]);
 
     const req = mockRequest({}, { id: "1" }, {}, { id_cliente: 1, admin: false, email: "teste@teste.com" });
     const res = mockResponse();
 
     await cancelarPedido(req as Request, res as Response);
 
-    expect(pedidoMock.update).toHaveBeenCalledWith({ status: "cancelado" });
+    // O estoque volta e o status muda na mesma transacao: um sem o outro
+    // deixaria produto preso num pedido que nao existe mais.
+    expect(Produto.increment).toHaveBeenCalledWith(
+      "estoque",
+      expect.objectContaining({ by: 3, where: { id_produto: 7 } })
+    );
+    expect(pedidoMock.update).toHaveBeenCalledWith(
+      { status: "cancelado" },
+      expect.objectContaining({ transaction: transactionMock })
+    );
+    expect(transactionMock.commit).toHaveBeenCalled();
     expect(res.status).toHaveBeenCalledWith(200);
   });
 });
