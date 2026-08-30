@@ -17,8 +17,10 @@ fazer em seguida.
 | `nginx/` | Proxy reverso HTTPS para o ambiente web |
 | `docker-compose.yml` | MySQL, backend, frontend e Nginx |
 
-A administração de produtos vive na web. O app mobile faz a jornada de compra e expõe
-apenas o dashboard para o admin.
+A escrita administrativa vive na web: criar e editar produtos só acontece lá. O app mobile
+faz a jornada de compra e, para o admin, expõe o dashboard mais consultas somente leitura
+de produtos e clientes. Desde a Fase M1.5 o app também roda no navegador, a partir do
+mesmo código, via `react-native-web`.
 
 ## Comandos
 

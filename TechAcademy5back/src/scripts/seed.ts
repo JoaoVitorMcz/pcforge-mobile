@@ -83,19 +83,35 @@ const CATEGORIAS = [
   { nome: "Periféricos", descricao: "Teclados, mouses e headsets" },
 ];
 
-const PRODUTOS = [
-  { nome: "Ryzen 5 5600", categoria: "Processadores", valor: 899.9, estoque: 12, destaque: true },
-  { nome: "Ryzen 7 5800X", categoria: "Processadores", valor: 1499.9, estoque: 6, destaque: false },
-  { nome: "Intel Core i5-12400F", categoria: "Processadores", valor: 1049.0, estoque: 3, destaque: false },
-  { nome: "GeForce RTX 4060", categoria: "Placas de vídeo", valor: 2199.0, estoque: 5, destaque: true },
-  { nome: "GeForce RTX 4070 Super", categoria: "Placas de vídeo", valor: 4599.0, estoque: 2, destaque: true },
-  { nome: "Radeon RX 7600", categoria: "Placas de vídeo", valor: 1899.0, estoque: 8, destaque: false },
-  { nome: "Memória DDR4 16GB 3200MHz", categoria: "Memórias", valor: 289.9, estoque: 30, destaque: false },
-  { nome: "Memória DDR5 32GB 6000MHz", categoria: "Memórias", valor: 899.0, estoque: 4, destaque: true },
-  { nome: "Teclado Mecânico RGB ABNT2", categoria: "Periféricos", valor: 349.9, estoque: 15, destaque: false },
-  { nome: "Mouse Gamer 16000 DPI", categoria: "Periféricos", valor: 199.9, estoque: 22, destaque: false },
-  { nome: "Headset 7.1 Surround", categoria: "Periféricos", valor: 429.0, estoque: 1, destaque: false },
-  { nome: "Mousepad Speed XL", categoria: "Periféricos", valor: 89.9, estoque: 40, destaque: false },
+/**
+ * `imagem` guarda so o nome do arquivo servido pela web em
+ * TechAcademy5front/public/imagens/produtos/. Quem renderiza e o ProdutoCard,
+ * que cai em placeholder.png quando o campo vem vazio — por isso os itens sem
+ * foto correspondente ficam em null em vez de apontar para um arquivo errado.
+ *
+ * Os nomes dos produtos aqui sao genericos e as fotos sao de modelos reais do
+ * mesmo tipo: a associacao e por categoria de produto, nao por SKU.
+ */
+const PRODUTOS: {
+  nome: string;
+  categoria: string;
+  valor: number;
+  estoque: number;
+  destaque: boolean;
+  imagem: string | null;
+}[] = [
+  { nome: "Ryzen 5 5600", categoria: "Processadores", valor: 899.9, estoque: 12, destaque: true, imagem: null },
+  { nome: "Ryzen 7 5800X", categoria: "Processadores", valor: 1499.9, estoque: 6, destaque: false, imagem: null },
+  { nome: "Intel Core i5-12400F", categoria: "Processadores", valor: 1049.0, estoque: 3, destaque: false, imagem: null },
+  { nome: "GeForce RTX 4060", categoria: "Placas de vídeo", valor: 2199.0, estoque: 5, destaque: true, imagem: null },
+  { nome: "GeForce RTX 4070 Super", categoria: "Placas de vídeo", valor: 4599.0, estoque: 2, destaque: true, imagem: null },
+  { nome: "Radeon RX 7600", categoria: "Placas de vídeo", valor: 1899.0, estoque: 8, destaque: false, imagem: "Placa-de-Video-AMD-Radeon-RX-7600-8GB.png" },
+  { nome: "Memória DDR4 16GB 3200MHz", categoria: "Memórias", valor: 289.9, estoque: 30, destaque: false, imagem: "Memoria-RAM-Kingston-FURY-Beast-16GB.png" },
+  { nome: "Memória DDR5 32GB 6000MHz", categoria: "Memórias", valor: 899.0, estoque: 4, destaque: true, imagem: "Memoria-RAM-Corsair-Vengeance-32GB.png" },
+  { nome: "Teclado Mecânico RGB ABNT2", categoria: "Periféricos", valor: 349.9, estoque: 15, destaque: false, imagem: "Blackwidow-V3.png" },
+  { nome: "Mouse Gamer 16000 DPI", categoria: "Periféricos", valor: 199.9, estoque: 22, destaque: false, imagem: "Deathadder-V2.png" },
+  { nome: "Headset 7.1 Surround", categoria: "Periféricos", valor: 429.0, estoque: 1, destaque: false, imagem: "Cloud-Stinger-2.png" },
+  { nome: "Mousepad Speed XL", categoria: "Periféricos", valor: 89.9, estoque: 40, destaque: false, imagem: "Fury-S.png" },
 ];
 
 async function semearClientes(): Promise<void> {
@@ -194,9 +210,10 @@ async function semearCatalogo(): Promise<void> {
   console.log(`categorias: ${idsPorCategoria.size}`);
 
   let novos = 0;
+  let imagensPreenchidas = 0;
 
   for (const produto of PRODUTOS) {
-    const [, criado] = await Produto.findOrCreate({
+    const [registro, criado] = await Produto.findOrCreate({
       where: { nome: produto.nome },
       defaults: {
         nome: produto.nome,
@@ -205,15 +222,31 @@ async function semearCatalogo(): Promise<void> {
         estoque: produto.estoque,
         destaque: produto.destaque,
         id_categoria: idsPorCategoria.get(produto.categoria) ?? null,
-        imagem: null,
+        imagem: produto.imagem,
         ativo: true,
       },
     });
 
-    if (criado) novos += 1;
+    if (criado) {
+      novos += 1;
+      continue;
+    }
+
+    // findOrCreate nao toca em quem ja existe, entao um banco semeado antes de
+    // as imagens entrarem ficaria com a vitrine toda em placeholder. So
+    // preenche quando o produto esta sem foto: uma imagem enviada pelo admin
+    // no painel nunca e sobrescrita por rodar o seed de novo.
+    if (produto.imagem && !registro.imagem) {
+      await registro.update({ imagem: produto.imagem });
+      imagensPreenchidas += 1;
+    }
   }
 
   console.log(`produtos: ${novos} criados, ${PRODUTOS.length - novos} ja existiam`);
+
+  if (imagensPreenchidas > 0) {
+    console.log(`imagens preenchidas em produtos existentes: ${imagensPreenchidas}`);
+  }
 }
 
 async function seed(): Promise<void> {

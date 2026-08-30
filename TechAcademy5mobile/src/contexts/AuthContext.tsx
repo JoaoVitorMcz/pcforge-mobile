@@ -7,6 +7,15 @@ import type { Cliente } from "@/types";
 const CHAVE_TOKEN = "pcforge.token";
 const CHAVE_CLIENTE = "pcforge.cliente";
 
+/**
+ * Persistencia da sessao por plataforma.
+ *
+ * expo-secure-store nao existe no web: encosta no Keychain do iOS e no
+ * Keystore do Android, que nao tem equivalente no navegador. A build web cai
+ * no localStorage, que e legivel por qualquer script da pagina — aceitavel
+ * porque o web e so a versao de demonstracao. O entregavel nativo continua no
+ * armazenamento seguro do sistema.
+ */
 const lerSessao = async (chave: string): Promise<string | null> =>
   Platform.OS === "web" ? localStorage.getItem(chave) : SecureStore.getItemAsync(chave);
 

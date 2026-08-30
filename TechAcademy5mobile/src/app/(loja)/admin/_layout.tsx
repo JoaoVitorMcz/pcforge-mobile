@@ -5,8 +5,8 @@ import { cores } from "@/theme";
 /**
  * Guarda da area administrativa. Esconder a aba no layout de tabs e apenas
  * cosmetico: quem chegar aqui por deep link ou navegacao direta cai neste
- * redirect. A API tambem responde 403 (adminMiddleware), entao sao tres
- * camadas independentes.
+ * redirect. A API tambem responde 403 (authorizeRole(["admin"])), entao sao
+ * tres camadas independentes.
  */
 export default function LayoutAdmin() {
   const { carregando, autenticado, isAdmin } = useAuth();
