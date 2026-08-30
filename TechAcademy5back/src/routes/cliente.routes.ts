@@ -2,7 +2,7 @@ import { Router } from "express";
 import * as ClienteController from "../controllers/cliente.controller";
 import {
   authMiddleware,
-  adminMiddleware,
+  authorizeRole,
   selfOrAdminMiddleware,
 } from "../config/auth.middleware";
 
@@ -18,6 +18,6 @@ router.put("/:id", authMiddleware, selfOrAdminMiddleware(), ClienteController.at
 router.delete("/:id", authMiddleware, selfOrAdminMiddleware(), ClienteController.desativarCliente);
 
 //  (só admin)
-router.get("/", authMiddleware, adminMiddleware, ClienteController.listarClientes);
+router.get("/", authMiddleware, authorizeRole(["admin"]), ClienteController.listarClientes);
 
 export default router;

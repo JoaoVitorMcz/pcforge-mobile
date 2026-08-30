@@ -4,16 +4,18 @@ services:
     container_name: pcforge_mysql
     restart: unless-stopped
     environment:
+      # MYSQL_USER/MYSQL_PASSWORD servem para criar um usuario comum e a
+      # imagem recusa "root" neles ("cannot be used for the root user"),
+      # entrando em restart loop. O backend conecta como root, entao a conta
+      # vem so de MYSQL_ROOT_PASSWORD.
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     volumes:
       - mysql_data:/var/lib/mysql
     networks:
       - app-network
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u${MYSQL_USER}", "-p${MYSQL_ROOT_PASSWORD}"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -34,6 +36,12 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       MERCADO_PAGO_ACCESS_TOKEN: ${MERCADO_PAGO_ACCESS_TOKEN}
       FRONTEND_URL: ${FRONTEND_URL}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+    # Publica a API na rede local para o desenvolvimento do app mobile: o
+    # celular nao resolve pcforge.local nem confia no certificado autoassinado
+    # do Nginx. Acesso via http://<IP-da-maquina>:3000, sem TLS.
+    ports:
+      - "3000:3000"
     depends_on:
       mysql:
         condition: service_healthy
@@ -53,6 +61,8 @@ services:
       - HOST=0.0.0.0
       - DANGEROUSLY_DISABLE_HOST_CHECK=true
       - REACT_APP_API_URL=
+    volumes:
+      - ./TechAcademy5front/public/imagens:/app/public/imagens:ro
     depends_on:
       - backend
     networks:

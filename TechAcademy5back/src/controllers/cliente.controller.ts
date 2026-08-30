@@ -3,6 +3,8 @@ import { Op } from "sequelize";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import Cliente from "../models/Cliente";
+import Role from "../models/Role";
+import Permissao from "../models/Permissao";
 import { getJwtSecret } from "../config/jwt";
 import { buildPaginatedResponse, getPaginationParams } from "../utils/pagination";
 import {
@@ -259,6 +261,31 @@ export const desativarCliente = async (req: Request, res: Response): Promise<voi
   }
 };
 
+type RoleComPermissoes = Role & { permissoes?: Permissao[] };
+type ClienteComRoles = Cliente & { roles?: RoleComPermissoes[] };
+
+/**
+ * Achata o grafo cliente -> roles -> permissoes nas duas listas de strings que
+ * viajam no token. As permissoes entram num Set porque dois papeis do mesmo
+ * cliente podem conceder a mesma permissao.
+ *
+ * Le a associacao por propriedade, e nao por cliente.get("roles"), porque o
+ * eager loading do Sequelize expoe as duas formas e a propriedade tambem
+ * resolve para `undefined` num objeto simples, sem estourar.
+ */
+const extrairRbac = (cliente: Cliente): { roles: string[]; permissoes: string[] } => {
+  const roles = (cliente as ClienteComRoles).roles ?? [];
+  const permissoes = new Set<string>();
+
+  for (const role of roles) {
+    for (const permissao of role.permissoes ?? []) {
+      permissoes.add(permissao.nome);
+    }
+  }
+
+  return { roles: roles.map((role) => role.nome), permissoes: [...permissoes] };
+};
+
 export const loginCliente = async (req: Request, res: Response): Promise<void> => {
   try {
     const { email, senha } = req.body;
@@ -268,7 +295,17 @@ export const loginCliente = async (req: Request, res: Response): Promise<void> =
       return;
     }
 
-    const cliente = await Cliente.findOne({ where: { email, ativo: true } });
+    const cliente = await Cliente.findOne({
+      where: { email, ativo: true },
+      include: [
+        {
+          model: Role,
+          as: "roles",
+          through: { attributes: [] },
+          include: [{ model: Permissao, as: "permissoes", through: { attributes: [] } }],
+        },
+      ],
+    });
 
     if (!cliente) {
       res.status(401).json({ mensagem: "Credenciais invalidas." });
@@ -284,8 +321,21 @@ export const loginCliente = async (req: Request, res: Response): Promise<void> =
 
     const { senha: _senha, ...clienteSemSenha } = cliente.toJSON();
 
+    const { roles, permissoes } = extrairRbac(cliente);
+    // Enquanto o boolean e o RBAC coexistem, qualquer um dos dois faz um admin.
+    const ehAdmin = cliente.admin || roles.includes("admin");
+    // Banco ainda sem o seed do RBAC: deriva o papel do boolean para o token
+    // nunca sair inconsistente consigo mesmo.
+    const rolesEfetivas = roles.length > 0 ? roles : [ehAdmin ? "admin" : "cliente"];
+
     const token = jwt.sign(
-      { id_cliente: cliente.id_cliente, email: cliente.email, admin: cliente.admin },
+      {
+        id_cliente: cliente.id_cliente,
+        email: cliente.email,
+        admin: ehAdmin,
+        roles: rolesEfetivas,
+        permissoes,
+      },
       getJwtSecret(),
       { expiresIn: "1d" }
     );

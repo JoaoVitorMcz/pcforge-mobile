@@ -6,7 +6,7 @@ import {
   atualizarCategoria,
   deletarCategoria,
 } from "../controllers/categoria.controller";
-import { authMiddleware, adminMiddleware } from "../config/auth.middleware";
+import { authMiddleware, authorizeRole } from "../config/auth.middleware";
 
 const router = Router();
 
@@ -15,8 +15,8 @@ router.get("/", listarCategorias);
 router.get("/:id", buscarCategoria);
 
 //  (somente admin)
-router.post("/", authMiddleware, adminMiddleware, criarCategoria);
-router.put("/:id", authMiddleware, adminMiddleware, atualizarCategoria);
-router.delete("/:id", authMiddleware, adminMiddleware, deletarCategoria);
+router.post("/", authMiddleware, authorizeRole(["admin"]), criarCategoria);
+router.put("/:id", authMiddleware, authorizeRole(["admin"]), atualizarCategoria);
+router.delete("/:id", authMiddleware, authorizeRole(["admin"]), deletarCategoria);
 
 export default router;

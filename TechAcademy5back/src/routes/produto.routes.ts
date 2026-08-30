@@ -1,6 +1,6 @@
 import { Router } from "express";
 import * as ProdutoController from "../controllers/produto.controller";
-import { authMiddleware, adminMiddleware } from "../config/auth.middleware";
+import { authMiddleware, authorizeRole } from "../config/auth.middleware";
 
 const router = Router();
 
@@ -11,8 +11,8 @@ router.get("/buscar", ProdutoController.buscarProdutosPorNome);   // ← se já 
 router.get("/:id", ProdutoController.buscarProdutoPorId);
 
 // (somente admin)
-router.post("/", authMiddleware, adminMiddleware, ProdutoController.criarProduto);
-router.put("/:id", authMiddleware, adminMiddleware, ProdutoController.atualizarProduto);
-router.delete("/:id", authMiddleware, adminMiddleware, ProdutoController.desativarProduto);
+router.post("/", authMiddleware, authorizeRole(["admin"]), ProdutoController.criarProduto);
+router.put("/:id", authMiddleware, authorizeRole(["admin"]), ProdutoController.atualizarProduto);
+router.delete("/:id", authMiddleware, authorizeRole(["admin"]), ProdutoController.desativarProduto);
 
 export default router;

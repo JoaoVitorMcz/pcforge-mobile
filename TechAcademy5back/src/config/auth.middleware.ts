@@ -35,8 +35,89 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction):
   }
 };
 
+/**
+ * Papeis efetivos do usuario autenticado.
+ *
+ * O fallback existe porque o boolean `admin` e o RBAC coexistem: um token
+ * emitido antes da migracao nao carrega `roles`, e sem isso todo admin antigo
+ * levaria 403 ate o token expirar.
+ */
+const extrairRoles = (cliente: TokenPayload): string[] => {
+  if (cliente.roles?.length) {
+    return cliente.roles;
+  }
+
+  return cliente.admin ? ["admin"] : ["cliente"];
+};
+
+/**
+ * Autorizacao por papel. Diferente do middleware de autenticacao, que e fixo,
+ * este precisa ser dinamico: cada rota exige uma lista propria de papeis.
+ * Dai a funcao de ordem superior — recebe a lista e devolve o middleware.
+ *
+ * Sempre DEPOIS de authMiddleware:
+ *   router.post("/", authMiddleware, authorizeRole(["admin"]), controller)
+ *
+ * Invertida a ordem, req.cliente ainda nao existe. Por isso o 401 explicito
+ * no inicio: e a diferenca entre uma resposta de erro e um TypeError lendo
+ * propriedade de undefined.
+ */
+export const authorizeRole =
+  (rolesPermitidas: string[]) =>
+  (req: Request, res: Response, next: NextFunction): void => {
+    if (!req.cliente) {
+      res.status(401).json({ mensagem: "Usuario nao autenticado." });
+      return;
+    }
+
+    const rolesDoCliente = extrairRoles(req.cliente);
+
+    if (!rolesDoCliente.some((role) => rolesPermitidas.includes(role))) {
+      res.status(403).json({ mensagem: "Permissoes insuficientes para acessar este recurso." });
+      return;
+    }
+
+    next();
+  };
+
+/**
+ * Autorizacao por permissao granular ("produto:criar"), a metade ROLE_PERM do
+ * modelo. Util quando a regra e sobre a acao, nao sobre o cargo de quem chama.
+ */
+export const authorizePermission =
+  (permissoesExigidas: string[]) =>
+  (req: Request, res: Response, next: NextFunction): void => {
+    if (!req.cliente) {
+      res.status(401).json({ mensagem: "Usuario nao autenticado." });
+      return;
+    }
+
+    // Admin passa direto: no seed ele recebe todas as permissoes, e essa linha
+    // evita 403 em token antigo, que nao tem a lista.
+    if (extrairRoles(req.cliente).includes("admin")) {
+      next();
+      return;
+    }
+
+    const permissoesDoCliente = req.cliente.permissoes ?? [];
+
+    if (!permissoesExigidas.every((permissao) => permissoesDoCliente.includes(permissao))) {
+      res.status(403).json({ mensagem: "Permissoes insuficientes para acessar este recurso." });
+      return;
+    }
+
+    next();
+  };
+
+/**
+ * Atalho legado de authorizeRole(["admin"]), mantido exportado por compatibilidade.
+ * Difere num ponto: responde 403 (nao 401) quando nao ha usuario autenticado.
+ * Rotas novas devem usar authorizeRole.
+ */
 export const adminMiddleware = (req: Request, res: Response, next: NextFunction): void => {
-  if (!req.cliente?.admin) {
+  const ehAdmin = req.cliente ? extrairRoles(req.cliente).includes("admin") : false;
+
+  if (!ehAdmin) {
     res.status(403).json({ mensagem: "Acesso restrito a administradores." });
     return;
   }

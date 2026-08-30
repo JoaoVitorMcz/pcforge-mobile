@@ -1,7 +1,7 @@
 import request from "supertest";
 import path from "path";
 import fs from "fs";
-import type { NextFunction, Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
 
 // Mock middleware to bypass auth and mark as admin for upload tests
 jest.mock("../config/auth.middleware", () => ({
@@ -10,19 +10,27 @@ jest.mock("../config/auth.middleware", () => ({
     next();
   },
   adminMiddleware: (_req: Request, _res: Response, next: NextFunction) => next(),
-  selfOrAdminMiddleware: (_paramName?: string) => (_req: Request, _res: Response, next: NextFunction) => next(),
+  authorizeRole:
+    (_roles?: string[]) => (_req: Request, _res: Response, next: NextFunction) =>
+      next(),
+  authorizePermission:
+    (_permissoes?: string[]) => (_req: Request, _res: Response, next: NextFunction) =>
+      next(),
+  selfOrAdminMiddleware:
+    (_paramName?: string) => (_req: Request, _res: Response, next: NextFunction) =>
+      next(),
 }));
 
 import app from "../index";
 
-const uploadDir = path.resolve(__dirname, "..", "..", "uploads");
+// Pasta temporaria criada em src/test-support/jest.env.ts. Nunca aponta para
+// os uploads reais, entao a suite grava arquivos sem apagar nada de ninguem.
+const uploadDir = process.env.UPLOAD_DIR as string;
 
 describe("Upload - integração", () => {
   beforeAll(() => {
+    expect(uploadDir).toBeTruthy();
     if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-    // limpar uploads antes
-    const files = fs.readdirSync(uploadDir);
-    for (const f of files) fs.unlinkSync(path.join(uploadDir, f));
   });
 
   it("Extensão inválida (exe) deve retornar 400", async () => {
