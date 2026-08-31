@@ -194,6 +194,18 @@ export async function criarPedidoComItens(input: CriarPedidoComItensInput, allow
       { transaction }
     );
 
+    // Baixa do estoque dentro da mesma transacao: se qualquer item falhar, o
+    // rollback desfaz pedido, itens e baixa juntos. decrement faz um UPDATE
+    // relativo (estoque = estoque - N), e nao uma leitura seguida de escrita,
+    // que perderia atualizacoes com dois pedidos simultaneos.
+    for (const item of itensNormalizados) {
+      await Produto.decrement("estoque", {
+        by: item.quantidade,
+        where: { id_produto: item.id_produto },
+        transaction,
+      });
+    }
+
     await transaction.commit();
 
     const pedidoCriado = await carregarPedidoDetalhado(novoPedido.id_pedido);

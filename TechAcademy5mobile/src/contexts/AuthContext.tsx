@@ -58,6 +58,21 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 const ehAdmin = (cliente: Cliente | null): boolean =>
   cliente?.admin === true || cliente?.admin === "true" || cliente?.admin === 1;
 
+/**
+ * Credenciais corretas, mas a conta nao e de administrador.
+ *
+ * Este app e o painel da loja; cliente comum compra pela web. A recusa
+ * acontece aqui, antes de gravar a sessao, para nao existir estado logado de
+ * quem nao pode usar o app — o layout do painel e a API sao as outras duas
+ * camadas, nao a unica.
+ */
+export class AcessoRestritoError extends Error {
+  constructor() {
+    super("Este aplicativo e restrito a administradores.");
+    this.name = "AcessoRestritoError";
+  }
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [cliente, setCliente] = useState<Cliente | null>(null);
   const [token, setToken] = useState<string | null>(null);
@@ -88,6 +103,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const entrar = useCallback(async (email: string, senha: string) => {
     const resposta = await loginNaApi(email, senha);
+
+    if (!ehAdmin(resposta.cliente)) {
+      throw new AcessoRestritoError();
+    }
 
     await Promise.all([
       salvarSessao(CHAVE_TOKEN, resposta.token),

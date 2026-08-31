@@ -13,14 +13,16 @@ fazer em seguida.
 |---|---|
 | `TechAcademy5back/` | API Express 5 + TypeScript, Sequelize, MySQL 8, JWT, Multer |
 | `TechAcademy5front/` | Web React 19: loja e painel administrativo |
-| `TechAcademy5mobile/` | App Expo (SDK 57) + Expo Router: compra do cliente e dashboard do admin |
+| `TechAcademy5mobile/` | App Expo (SDK 57) + Expo Router: painel administrativo da loja |
 | `nginx/` | Proxy reverso HTTPS para o ambiente web |
 | `docker-compose.yml` | MySQL, backend, frontend e Nginx |
 
-A escrita administrativa vive na web: criar e editar produtos só acontece lá. O app mobile
-faz a jornada de compra e, para o admin, expõe o dashboard mais consultas somente leitura
-de produtos e clientes. Desde a Fase M1.5 o app também roda no navegador, a partir do
-mesmo código, via `react-native-web`.
+**A web atende o cliente; o app administra a loja.** A loja web tem vitrine, carrinho e
+checkout. O aplicativo é **exclusivamente administrativo**: recusa quem não é admin já no
+login, e faz CRUD de produtos com upload de imagem, gestão de pedidos, consulta de clientes e
+os indicadores. Cada plataforma serve uma persona, e nenhuma regra de negócio vive em duas.
+
+O app também roda no navegador, a partir do mesmo código, via `react-native-web`.
 
 ## Comandos
 
@@ -32,7 +34,7 @@ docker compose up -d mysql backend
 docker compose exec backend npm run seed
 
 # Backend
-cd TechAcademy5back && npm test          # 90 testes (Jest + Supertest)
+cd TechAcademy5back && npm test          # 117 testes (Jest + Supertest)
 cd TechAcademy5back && npm run lint
 
 # Web
@@ -45,7 +47,8 @@ cd TechAcademy5mobile && npm run lint
 ```
 
 Contas criadas pelo seed, ambas com senha `Senha@123`:
-`admin@pcforge.com` (admin) e `cliente@pcforge.com` (cliente comum).
+`admin@pcforge.com` (admin) e `cliente@pcforge.com` (cliente comum). **Só a de admin entra no
+app**; a de cliente serve para a loja web e para testar o 403.
 
 ## Convenções
 
@@ -76,5 +79,11 @@ o problema.
 - **A validação de imagem usa `UploadValidationError` com `instanceof`**, nunca
   comparação de substring da mensagem: reescrever o texto do erro viraria um 500
   silencioso.
+- **A baixa de estoque mora na transação de `criarPedidoComItens`.** Tirá-la de lá permite o
+  pedido ser gravado sem o estoque cair, que é exatamente o bug que a auditoria encontrou.
+  Use `decrement`/`increment`, nunca ler o estoque e escrever de volta: duas compras
+  simultâneas perderiam uma das atualizações.
+- **`criarCliente` precisa vincular o papel em `cliente_role`.** Sem isso o token sai com
+  `permissoes: []` e as rotas com `authorizePermission` recusam quem acabou de se cadastrar.
 - **O E2E roda no CI, não no `pre-push`.** A primeira compilação do CRA com o cache do
   webpack frio passa de 5 minutos, por isso `webServer.timeout` está em 600s.

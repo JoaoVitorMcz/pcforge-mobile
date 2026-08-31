@@ -82,7 +82,8 @@ O seed cria 22 permissões no formato `recurso:acao`, cobrindo os recursos que a
 
 `adminMiddleware` era fixo — sabia checar um único papel. `authorizeRole` é uma **função de
 ordem superior**: recebe a lista de papéis aceitos e devolve o middleware já configurado.
-Assim cada rota declara a sua própria exigência.
+Assim cada rota declara a sua própria exigência. O `adminMiddleware` foi removido depois que
+todas as rotas migraram.
 
 ```ts
 export const authorizeRole =
@@ -107,8 +108,28 @@ export const authorizeRole =
 Basta **um** papel do usuário estar na lista para liberar — por isso `some`. Uma rota aberta a
 mais de um cargo se escreve `authorizeRole(["admin", "editor"])`.
 
-`authorizePermission(["produto:criar"])` é a variante granular, que decide pela ação em vez do
-cargo. Ela exige **todas** as permissões listadas (`every`), e admin passa direto.
+`authorizePermission([...])` é a variante granular, que decide pela ação em vez do cargo. Ela
+exige **todas** as permissões listadas (`every`), e admin passa direto. Está em uso nas rotas
+que o cliente exerce:
+
+| Rota | Permissão exigida |
+|---|---|
+| `POST /pedidos` | `pedido:criar` |
+| `PATCH /pedidos/:id/cancelar` | `pedido:atualizar` |
+| `POST /enderecos` | `endereco:criar` |
+
+É o que faz as tabelas `permissao` e `role_permissao` sustentarem decisão de verdade, em vez
+de só existirem no modelo.
+
+**Token legado.** Se a claim `permissoes` estiver **ausente** (`undefined`), o middleware cai
+no papel, como `extrairRoles` já faz com o boolean — senão quem estivesse logado no momento do
+deploy levaria 403 até o token de um dia vencer. Uma lista **vazia** é diferente: significa que
+o token é novo e o usuário realmente não tem permissão alguma.
+
+**O papel nasce no cadastro.** `criarCliente` vincula o cliente novo ao papel `cliente` em
+`cliente_role`. Sem isso, só as contas do seed teriam permissões, e todo cadastro pela API
+sairia com `permissoes: []` — barrado nas três rotas acima. O seed também corrige
+retroativamente quem já estava gravado sem papel.
 
 ## A ordem dos middlewares importa
 

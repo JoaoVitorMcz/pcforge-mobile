@@ -7,7 +7,7 @@ decisões foram tomadas assim.
 > Fase D, listados abaixo — este aqui só rastreia o andamento. Não marque aqueles itens da
 > rubrica como prontos por causa deste documento.
 
-Última atualização: fim da Fase M1, o RBAC do backend e a base web do app (Fase M1.5).
+Última atualização: o app virou o painel administrativo (Fase P), com as correções da auditoria.
 
 ## Placar da rubrica
 
@@ -15,11 +15,11 @@ decisões foram tomadas assim.
 |---|---|---|---|
 | Tech Forge | Multer recebendo e salvando imagens | 1,0 | ✅ |
 | Tech Forge | Validação de extensão, tamanho e colisão de nomes | 1,0 | ✅ |
-| Tech Forge | Controle funcional de usuário admin e usuário | 2,0 | 🟡 |
+| Tech Forge | Controle funcional de usuário admin e usuário | 2,0 | ✅ |
 | Mobile | Arquitetura e padronização de projeto | 0,5 | ✅ |
 | Mobile | Componentização e boas práticas (clean code) | 1,0 | ✅ |
 | Mobile | CRUD completo: aplicativo × API × banco | 1,0 | ✅ |
-| Mobile | Regra de negócio respeitada entre funcionalidades | 0,5 | 🟡 |
+| Mobile | Regra de negócio respeitada entre funcionalidades | 0,5 | ✅ |
 | Mobile | Usabilidade, compatibilidade entre dispositivos e segurança | 1,0 | ❌ |
 | Engenharia | Contextualização e evolução do produto | 1,0 | ✅ |
 | Engenharia | Diagrama entidade-relacionamento | 0,5 | ✅ |
@@ -28,15 +28,22 @@ decisões foram tomadas assim.
 | Engenharia | 2 diagramas de atividade | 0,5 | ✅ |
 | Engenharia | 2 diagramas de sequência | 0,5 | ✅ |
 
-**Total: 8,5 / 12,0**
+**Total: 11,0 / 12,0**
 
-Sobre os dois itens parciais:
+O único item em aberto é **usabilidade, compatibilidade e segurança (1,0)**, da Fase M3: falta
+rodar num aparelho real, registrar as evidências e tratar 401 fora do login.
 
-- **Controle admin × usuário (2,0)** — backend, web e app já implementam, agora sobre RBAC
-  com papéis e permissões ([docs/rbac.md](rbac.md)). Falta a demonstração de ponta a ponta
-  e as evidências, previstas na Fase M2.
-- **Regra de negócio (0,5)** — validação de formulário feita (CPF, e-mail, senha forte,
-  campos obrigatórios de endereço). Faltam as regras de compra: estoque e checkout.
+O que fechou nesta fase:
+
+- **Controle admin × usuário (2,0)** — o app inteiro é restrito: o login recusa quem não é
+  admin antes de gravar a sessão, o layout do painel redireciona quem chega por deep link e a
+  API responde 403. `authorizePermission` passou a valer em rotas reais, então as tabelas
+  `permissao` e `role_permissao` sustentam decisão ([rbac.md](rbac.md)).
+- **CRUD completo (1,0)** — passou a ser o de **Produtos**, no painel. O de Endereços saiu
+  junto com as telas de cliente.
+- **Regra de negócio (0,5)** — validação do formulário de produto (preço maior que zero,
+  estoque inteiro e não negativo), máquina de estados do pedido e, no backend, a baixa e a
+  devolução de estoque, que **não existiam**.
 
 ## Fases
 
@@ -46,6 +53,10 @@ Sobre os dois itens parciais:
 - `GET /admin/dashboard`, restrito a admin, com agregações de pedidos e estoque
 - App Expo com Expo Router: login, cadastro, catálogo, perfil e dashboard do admin
 - CRUD completo de endereços no app
+
+> As telas de cliente desta fase (cadastro, catálogo, perfil, endereços) foram **removidas na
+> Fase P**, quando o app virou painel administrativo. O CRUD da rubrica passou a ser o de
+> produtos.
 
 ### M1.5 — base web do app · concluída
 
@@ -67,22 +78,38 @@ restaurados; o `tsconfig.json` tinha perdido `.expo/types` do `include`; e as 26
 antigas com espaço e acento no nome ficaram duplicadas com as novas — foram removidas, o
 `placeholder.png` que faltava foi criado e o seed passou a preencher `imagem`.
 
-### M2 — carrinho e pedidos
+### P — o app vira o painel administrativo · concluída
 
-Fecha 0,5 de regra de negócio e os 2,0 de controle de acesso.
+Mudança de escopo: o aplicativo é **exclusivamente para administradores**. A compra fica na
+loja web, então saíram cadastro, vitrine, perfil e o CRUD de endereços. `(loja)/admin/*`
+achatou para o grupo `(painel)/*` e a guarda de admin subiu para o layout do grupo.
 
-- [ ] Contexto de carrinho no app, portando `TechAcademy5front/src/context/CarrinhoContext.jsx`
-- [ ] Tela de carrinho sobre `/itens-pedido`: adicionar, alterar quantidade, remover
-- [ ] Checkout criando pedido via `POST /pedidos`, exigindo endereço cadastrado
-- [ ] "Meus pedidos" com `GET /pedidos/cliente/:id` e cancelamento
-- [ ] Regras de negócio: bloquear compra sem estoque, sem endereço e sem login
-- [ ] Demonstração de ponta do controle de acesso: a mesma navegação vista por um
-      cliente e por um admin
+- [x] CRUD de produtos no app: criar, editar e desativar, com formulário compartilhado
+- [x] Upload de imagem pela galeria do aparelho (`expo-image-picker`)
+- [x] Gestão de pedidos: lista com filtro por status e detalhe com mudança de status
+- [x] Login recusa quem não é admin, antes de gravar a sessão
+- [x] Limpeza dos órfãos: `services/enderecos.ts`, `ProdutoCard`, validações de CPF e CEP
+
+**Auditoria das fases anteriores.** Nove problemas encontrados e corrigidos:
+
+| # | Problema | Correção |
+|---|---|---|
+| 1 | Os PRs foram para a `main`, não para a `dev` | `dev` alinhada por fast-forward |
+| 2 | **Estoque nunca era baixado** — 1 unidade vendia infinitas vezes | Débito na transação e devolução no cancelamento |
+| 3 | **Só o seed escrevia em `cliente_role`** — cadastro pela API ficava sem permissões | `criarCliente` vincula o papel; seed corrige o retroativo |
+| 4 | `itempedido` não validava estoque | Ajuste pela diferença de quantidade |
+| 5 | Status de pedido sem máquina de estados: `entregue` voltava a `pendente` | Transições validadas, com 409 |
+| 6 | A regra de estoque não tinha teste | `pedido-estoque.test.ts`, sobre o serviço real |
+| 7 | Os diagramas descreviam baixa de estoque inexistente, e 400 onde era 409 | Corrigidos, e agora verdadeiros |
+| 8 | `authorizePermission` e `adminMiddleware` eram código morto | O primeiro entrou em rotas reais; o segundo saiu |
+| 9 | `models/index.js` e `config/config.js`, scaffolding do sequelize-cli | Removidos |
+
+O item 2 é o mais grave: era a regra de negócio que a rubrica cobra, e não existia.
 
 ### M3 — validação e evidências
 
-Fecha 1,0 de usabilidade, compatibilidade e segurança. A M1.5 adiantou parte disto, mas
-**nenhum item fechou sozinho**:
+Único item de rubrica em aberto: **1,0 de usabilidade, compatibilidade e segurança**. É a fase
+que falta.
 
 - [ ] Rodar em Android e em um segundo aparelho ou emulador, registrando prints
       — a build web já dá uma segunda plataforma, faltam os prints e um aparelho real
@@ -92,22 +119,25 @@ Fecha 1,0 de usabilidade, compatibilidade e segurança. A M1.5 adiantou parte di
 - [x] Tratar falha de rede sem travar a tela — login trata `TypeError` de conexão e as
       listas usam `EstadoLista` com "Tentar novamente"
 - [ ] Conferir que o token nunca aparece em log
+- [ ] **Evidências do controle de acesso**: a mesma navegação vista por um admin e por um
+      cliente, mostrando que o cliente nem passa do login
 
 ### D — documentação de Engenharia · concluída
 
 **4,0 pontos, o mesmo peso do app mobile inteiro.** Saíram dos models e das rotas que já
 existiam, sem depender das outras fases.
 
-- [x] [contextualizacao.md](contextualizacao.md) — problema, duas personas e as cinco etapas
-      da evolução web → web + mobile + navegador
+- [x] [contextualizacao.md](contextualizacao.md) — problema, as duas personas com a sua
+      plataforma, e as seis etapas da evolução até o app virar painel
 - [x] [der.md](der.md) — ER das 10 tabelas (6 do domínio + 4 do RBAC), com as decisões de
       modelagem e a tabela de cardinalidades
 - [x] [requisitos.md](requisitos.md) — 8 grupos de requisitos funcionais mapeados rota a rota,
-      com o nível de acesso de cada uma, e 5 grupos de não funcionais
-- [x] [casos-de-uso.md](casos-de-uso.md) — cliente compra pelo app; admin gerencia a loja
-- [x] [diagramas-atividade.md](diagramas-atividade.md) — checkout; upload com validação
+      com o nível de acesso e **a plataforma** de cada um, e 5 grupos de não funcionais
+- [x] [casos-de-uso.md](casos-de-uso.md) — cliente compra na web; admin opera pelo app
+- [x] [diagramas-atividade.md](diagramas-atividade.md) — checkout; cancelamento com devolução
+      de estoque; upload com validação
 - [x] [diagramas-sequencia.md](diagramas-sequencia.md) — login com JWT + RBAC; criar pedido
-      App → API → MySQL
+      Web → API → MySQL; admin muda o status pelo app
 
 Todos em Markdown com Mermaid, que o GitHub renderiza direto. Os blocos foram validados com
 `@mermaid-js/mermaid-cli`, então nenhum diagrama depende de o avaliador ter ferramenta extra.
@@ -115,10 +145,11 @@ Se o professor exigir imagem, `mmdc` exporta para PNG sem retrabalho.
 
 ## Decisões de arquitetura
 
-- **O app mobile lê, a web escreve.** A criação e edição de produtos continua só na web,
-  sem duplicar telas complexas de CRUD em duas plataformas; o app expõe ao admin o
-  dashboard e consultas **somente leitura** de produtos e clientes. Substitui a regra
-  anterior ("o app expõe só o dashboard"), que a M1.5 passou a contradizer.
+- **A web atende o cliente; o app administra a loja.** Cada plataforma serve uma persona, e
+  nenhuma regra de negócio vive em duas. Substitui as duas regras anteriores ("o app expõe só
+  o dashboard" e "o app lê, a web escreve"): duplicar a jornada de compra dava o mesmo
+  trabalho duas vezes e não resolvia o problema de quem **opera** a loja e precisa fazer isso
+  longe do computador — o estoque acaba no depósito, não no escritório.
 - **O app roda em nativo e no navegador a partir do mesmo código.** `react-native-web`
   dá uma segunda plataforma para a demonstração sem manter dois projetos. O custo é a
   sessão precisar de dois back-ends de armazenamento — daí o `localStorage` na web.
@@ -148,14 +179,11 @@ Se o professor exigir imagem, `mmdc` exporta para PNG sem retrabalho.
 - **Bloco de E2E em `.husky/pre-push` (linhas 13-20).** Remover: o E2E roda no CI, então
   não se perde cobertura, e o hook trava o push enquanto espera o dev server do CRA
   subir.
-- **`main` desatualizada.** Está 11 commits atrás da `dev`, e a distância cresce a cada
-  entrega. **Não há merge a resolver**:
-  depois de `bceb4e0` a `main` virou ancestral da `dev`, então atualizar é um
-  fast-forward de risco zero.
-  O que continua valendo é o estado do conteúdo dela hoje: sem CORS, com o teste de
-  upload que apaga `uploads/` real e com `MYSQL_USER=root` no `.env.example` — ou seja,
-  quem clonar a `main` não consegue nem subir o banco. Foi decisão consciente aguardar
-  alinhamento da dupla, mas não deve ir para a entrega assim.
+- **Os PRs vão para a `main` por engano.** O GitHub sugere `main` como base porque é o branch
+  padrão do repositório, e foi para lá que a última leva foi. A `dev` já foi alinhada por
+  fast-forward, mas **é preciso trocar a base para `dev` a cada PR** — ou mudar o branch
+  padrão do repositório no GitHub, que resolve de vez.
+
 - **O boolean `admin` convive com o RBAC.** O token carrega `roles` e `admin` ao mesmo
   tempo, e `extrairRoles` deriva um do outro nos dois sentidos. É proposital: web e mobile
   ainda leem `admin`. Remover o boolean quando as duas pontas passarem a ler `roles` —
@@ -166,6 +194,10 @@ Se o professor exigir imagem, `mmdc` exporta para PNG sem retrabalho.
 - **Push direto na `dev` no commit `9d77847`.** O fluxo desta seção pede uma branch por
   tarefa integrando de volta na `dev`. Um commit squashed sem corpo também dificulta
   revisar e reverter em partes. Combinar com a dupla antes da próxima entrega.
+- **A cópia da máquina de estados no app pode divergir do backend.** `TRANSICOES` em
+  `services/pedidos.ts` espelha `TRANSICOES_DE_STATUS` do controller. É proposital — a tela
+  só oferece o que a API aceita — mas mudar um lado exige mudar o outro. A API continua sendo
+  quem decide, então a divergência causa botão a mais ou a menos, nunca dado errado.
 - **Acesso do celular pela LAN nunca testado num aparelho real.** O bundle compila e a
   API responde pelo IP da máquina, mas ninguém abriu o app em um telefone. Se não
   conectar, o primeiro suspeito é o firewall: o Wi-Fi está no perfil **Público**, onde o
