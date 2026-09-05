@@ -1,6 +1,7 @@
 import { Redirect, Tabs } from "expo-router";
 import { Text, type ColorValue } from "react-native";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCarrinho } from "@/contexts/CarrinhoContext";
 import { cores } from "@/theme";
 
 /** Icone textual simples: evita mais uma dependencia so por causa de glifos. */
@@ -10,6 +11,7 @@ const Icone = ({ simbolo, cor }: { simbolo: string; cor: ColorValue }) => (
 
 export default function LayoutLoja() {
   const { autenticado, carregando, isAdmin } = useAuth();
+  const { quantidadeTotal } = useCarrinho();
 
   if (carregando) return null;
   if (!autenticado) return <Redirect href="/(auth)/login" />;
@@ -32,6 +34,23 @@ export default function LayoutLoja() {
           tabBarIcon: ({ color }) => <Icone simbolo="▤" cor={color} />,
         }}
       />
+      <Tabs.Screen
+        name="carrinho"
+        options={{
+          title: "Carrinho",
+          // O badge some quando zerado: undefined, nao 0, senao o Tabs
+          // desenha um circulo com "0" dentro.
+          tabBarBadge: quantidadeTotal > 0 ? quantidadeTotal : undefined,
+          tabBarBadgeStyle: { backgroundColor: cores.primaria },
+          tabBarIcon: ({ color }) => <Icone simbolo="◫" cor={color} />,
+        }}
+      />
+      {/*
+        "Meus pedidos" fica fora da barra: com catalogo, carrinho, enderecos,
+        perfil e admin ja sao cinco abas. Chega-se por ele pelo perfil e pela
+        confirmacao do checkout.
+      */}
+      <Tabs.Screen name="pedidos" options={{ href: null, headerShown: false }} />
       <Tabs.Screen
         name="enderecos"
         options={{

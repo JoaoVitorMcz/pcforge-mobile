@@ -1,11 +1,20 @@
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useCarrinho } from "@/contexts/CarrinhoContext";
 import { cores, espaco, fonte, formatarPreco, raio } from "@/theme";
 import type { Produto } from "@/types";
 
 const ESTOQUE_BAIXO = 5;
 
 export function ProdutoCard({ produto }: { produto: Produto }) {
+  const { itens, adicionar } = useCarrinho();
+
   const semEstoque = produto.estoque <= 0;
+  const noCarrinho =
+    itens.find((item) => item.produto.id_produto === produto.id_produto)?.quantidade ?? 0;
+  // Primeira barreira da regra de estoque: nao deixa nem pedir mais do que ha.
+  // A decisao final e do backend, que responde 409 no checkout.
+  const limiteAtingido = noCarrinho >= produto.estoque;
+  const bloqueado = semEstoque || limiteAtingido;
 
   return (
     <View style={estilos.card}>
@@ -34,6 +43,25 @@ export function ProdutoCard({ produto }: { produto: Produto }) {
           {semEstoque ? "Esgotado" : `${produto.estoque} em estoque`}
         </Text>
       </View>
+
+      <TouchableOpacity
+        accessibilityRole="button"
+        accessibilityState={{ disabled: bloqueado }}
+        accessibilityLabel={`Adicionar ${produto.nome} ao carrinho`}
+        style={[estilos.acao, bloqueado && estilos.acaoBloqueada]}
+        disabled={bloqueado}
+        onPress={() => adicionar(produto)}
+      >
+        <Text style={[estilos.acaoTexto, bloqueado && estilos.acaoTextoBloqueado]}>
+          {semEstoque
+            ? "Indisponível"
+            : limiteAtingido
+              ? `Estoque no limite (${noCarrinho})`
+              : noCarrinho > 0
+                ? `No carrinho (${noCarrinho}) · adicionar mais`
+                : "Adicionar ao carrinho"}
+        </Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -94,5 +122,26 @@ const estilos = StyleSheet.create({
   },
   estoqueEsgotado: {
     color: cores.perigo,
+  },
+  acao: {
+    marginTop: espaco.md,
+    height: 44,
+    borderRadius: raio.md,
+    backgroundColor: cores.primaria,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  acaoBloqueada: {
+    backgroundColor: cores.superficieClara,
+    borderWidth: 1,
+    borderColor: cores.borda,
+  },
+  acaoTexto: {
+    color: cores.fundo,
+    fontSize: fonte.pequena,
+    fontWeight: "700",
+  },
+  acaoTextoBloqueado: {
+    color: cores.textoFraco,
   },
 });

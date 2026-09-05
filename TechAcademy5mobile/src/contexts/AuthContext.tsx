@@ -1,41 +1,10 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { Platform } from "react-native";
-import * as SecureStore from "expo-secure-store";
 import { login as loginNaApi } from "@/services/clientes";
+import { lerSessao, removerSessao, salvarSessao } from "@/services/sessao";
 import type { Cliente } from "@/types";
 
 const CHAVE_TOKEN = "pcforge.token";
 const CHAVE_CLIENTE = "pcforge.cliente";
-
-/**
- * Persistencia da sessao por plataforma.
- *
- * expo-secure-store nao existe no web: encosta no Keychain do iOS e no
- * Keystore do Android, que nao tem equivalente no navegador. A build web cai
- * no localStorage, que e legivel por qualquer script da pagina — aceitavel
- * porque o web e so a versao de demonstracao. O entregavel nativo continua no
- * armazenamento seguro do sistema.
- */
-const lerSessao = async (chave: string): Promise<string | null> =>
-  Platform.OS === "web" ? localStorage.getItem(chave) : SecureStore.getItemAsync(chave);
-
-const salvarSessao = async (chave: string, valor: string): Promise<void> => {
-  if (Platform.OS === "web") {
-    localStorage.setItem(chave, valor);
-    return;
-  }
-
-  await SecureStore.setItemAsync(chave, valor);
-};
-
-const removerSessao = async (chave: string): Promise<void> => {
-  if (Platform.OS === "web") {
-    localStorage.removeItem(chave);
-    return;
-  }
-
-  await SecureStore.deleteItemAsync(chave);
-};
 
 interface AuthContextValue {
   cliente: Cliente | null;

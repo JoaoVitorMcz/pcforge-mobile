@@ -2,6 +2,8 @@ import { NextFunction, Request, Response } from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import Cliente from "../models/Cliente";
+import Role from "../models/Role";
+import ClienteRole from "../models/ClienteRole";
 import {
   buscarClientePorId,
   criarCliente,
@@ -13,6 +15,19 @@ jest.mock("../models/Cliente");
 jest.mock("bcrypt");
 jest.mock("jsonwebtoken");
 
+// criarCliente vincula o papel padrao em cliente_role. Sem estes mocks, o
+// helper tentaria conexao real com o MySQL: alem do ruido no console, a
+// tentativa demora e deixava a suite intermitente sob execucao paralela.
+jest.mock("../models/Role", () => ({
+  __esModule: true,
+  default: { findOne: jest.fn() },
+}));
+jest.mock("../models/ClienteRole", () => ({
+  __esModule: true,
+  default: { findOrCreate: jest.fn() },
+}));
+jest.mock("../models/Permissao", () => ({ __esModule: true, default: {} }));
+
 
 beforeAll(() => {
   process.env.JWT_SECRET = "segredo_teste";
@@ -21,6 +36,9 @@ beforeAll(() => {
 
 beforeEach(() => {
   jest.clearAllMocks();
+
+  (Role.findOne as jest.Mock).mockResolvedValue({ id_role: 2, nome: "cliente" });
+  (ClienteRole.findOrCreate as jest.Mock).mockResolvedValue([{}, true]);
 
   (jwt.sign as jest.Mock).mockReturnValue("token_fake");
   (jwt.verify as jest.Mock).mockReturnValue({
@@ -207,5 +225,58 @@ describe("cliente.controller", () => {
         totalPaginas: 1,
       },
     });
+  });
+
+  it("9. Cadastro bem-sucedido vincula o papel 'cliente' ao novo cliente", async () => {
+    (Cliente.findOne as jest.Mock).mockResolvedValue(null);
+    (bcrypt.hash as jest.Mock).mockResolvedValue("hash_fake");
+    (Cliente.create as jest.Mock).mockResolvedValue({
+      id_cliente: 42,
+      toJSON: () => ({ id_cliente: 42, nome: "Joao", email: "joao@email.com", senha: "hash_fake" }),
+    });
+
+    const req = mockRequest({
+      nome: "Joao",
+      email: "joao@email.com",
+      senha: "Senha123",
+      cpf: "390.533.447-05",
+    });
+    const res = mockResponse();
+
+    await criarCliente(req as Request, res as Response);
+
+    expect(res.status).toHaveBeenCalledWith(201);
+
+    // Sem este vinculo o token sairia com permissoes vazias e o cliente novo
+    // seria barrado em POST /pedidos, que exige a permissao pedido:criar.
+    expect(Role.findOne).toHaveBeenCalledWith({ where: { nome: "cliente" } });
+    expect(ClienteRole.findOrCreate).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id_cliente: 42, id_role: 2 } })
+    );
+  });
+
+  it("10. Cadastro nao falha quando o papel ainda nao existe no banco", async () => {
+    (Cliente.findOne as jest.Mock).mockResolvedValue(null);
+    (bcrypt.hash as jest.Mock).mockResolvedValue("hash_fake");
+    (Cliente.create as jest.Mock).mockResolvedValue({
+      id_cliente: 43,
+      toJSON: () => ({ id_cliente: 43, nome: "Maria", email: "maria@email.com", senha: "hash_fake" }),
+    });
+    // Banco sem seed: nenhum papel cadastrado.
+    (Role.findOne as jest.Mock).mockResolvedValue(null);
+
+    const req = mockRequest({
+      nome: "Maria",
+      email: "maria@email.com",
+      senha: "Senha123",
+      cpf: "390.533.447-05",
+    });
+    const res = mockResponse();
+
+    await criarCliente(req as Request, res as Response);
+
+    // O cadastro continua valendo: o fallback pelo boolean admin cobre o acesso.
+    expect(res.status).toHaveBeenCalledWith(201);
+    expect(ClienteRole.findOrCreate).not.toHaveBeenCalled();
   });
 });

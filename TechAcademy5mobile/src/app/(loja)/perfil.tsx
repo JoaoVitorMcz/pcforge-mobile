@@ -33,6 +33,14 @@ export default function Perfil() {
         <Linha rotulo="Perfil" valor={isAdmin ? "Administrador" : "Cliente"} />
       </View>
 
+      <View style={estilos.acao}>
+        <Botao
+          titulo="Meus pedidos"
+          variante="secundaria"
+          aoPressionar={() => router.push("/(loja)/pedidos")}
+        />
+      </View>
+
       {/* Util no desenvolvimento: mostra para qual API o app esta apontando. */}
       <Text style={estilos.api}>API: {API_BASE_URL}</Text>
 
@@ -69,6 +77,9 @@ const estilos = StyleSheet.create({
     color: cores.texto,
     fontSize: fonte.corpo,
     fontWeight: "600",
+  },
+  acao: {
+    marginBottom: espaco.md,
   },
   api: {
     color: cores.textoFraco,
