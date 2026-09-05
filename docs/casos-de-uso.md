@@ -1,12 +1,12 @@
 # Diagramas de caso de uso
 
-Os dois recortes que separam as personas do PC Forge — e, com elas, as duas plataformas: o
-cliente compra **na loja web**, o administrador opera a loja **pelo aplicativo**. Requisitos
-referenciados em [requisitos.md](requisitos.md).
+Os dois recortes que separam as personas do PC Forge: o cliente comprando pelo app e o
+administrador operando a loja pela web. Requisitos referenciados em
+[requisitos.md](requisitos.md).
 
 ---
 
-## Caso de uso 1 — Cliente compra na loja web
+## Caso de uso 1 — Cliente compra pelo aplicativo
 
 ```mermaid
 flowchart LR
@@ -15,7 +15,7 @@ flowchart LR
     API(("⚙️<br/>API PC Forge"))
     Pagamento(("💳<br/>Gateway de<br/>pagamento"))
 
-    subgraph sistema["Loja web PC Forge"]
+    subgraph sistema["Aplicativo PC Forge"]
         UC01["Cadastrar-se"]
         UC02["Autenticar-se"]
         UC03["Navegar pelo catálogo"]
@@ -57,50 +57,46 @@ flowchart LR
 | | |
 |---|---|
 | **Ator principal** | Cliente autenticado |
-| **Plataforma** | Loja web |
 | **Pré-condições** | Carrinho com ao menos um item; ao menos um endereço cadastrado |
 | **Pós-condições** | Pedido criado com status `pendente`, preço congelado e estoque debitado |
-| **Requisitos** | RF-04.1 a RF-04.4 |
+| **Requisitos** | RF-04.1, RF-04.2, RF-04.3 |
 
 **Fluxo principal**
 
 1. O cliente abre o carrinho e revisa os itens
 2. O sistema apresenta o total e pede a escolha do endereço de entrega
 3. O cliente seleciona um endereço e confirma
-4. O sistema valida a permissão `pedido:criar` do cliente
-5. O sistema soma as quantidades por produto e valida o estoque
-6. O sistema cria o pedido e os itens e debita o estoque, em uma única transação
-7. O sistema apresenta a confirmação e esvazia o carrinho
+4. O sistema valida estoque de cada item
+5. O sistema cria o pedido e os itens, congelando o preço unitário
+6. O sistema apresenta a confirmação e esvazia o carrinho
 
 **Fluxos alternativos**
 
-- **5a. Estoque insuficiente** — o sistema responde **409** nomeando o produto e a quantidade
+- **4a. Estoque insuficiente** — o sistema responde **409** nomeando o produto e a quantidade
   disponível, e mantém o carrinho para ajuste
+- **5a. Falha no meio da transação** — nada é gravado: sem pedido, sem itens e sem estoque
+  debitado
 - **2a. Sem endereço cadastrado** — o sistema desvia para o cadastro de endereço (UC07) e
   retorna ao passo 2
-- **3a. Endereço de outro cliente** — o sistema responde **403**
 - **1a. Sessão expirada** — o token venceu; o sistema leva ao login (UC02) e retorna
-- **6a. Falha no meio da transação** — nada é gravado: sem pedido, sem itens e sem estoque
-  debitado
 
 ---
 
-## Caso de uso 2 — Administrador opera a loja pelo aplicativo
+## Caso de uso 2 — Administrador gerencia a loja
 
 ```mermaid
 flowchart LR
     Admin(("👤<br/>Administrador"))
     Sistema(("⚙️<br/>API PC Forge"))
-    Camera(("📷<br/>Galeria do<br/>aparelho"))
 
-    subgraph painel["Aplicativo PC Forge — painel"]
+    subgraph painel["Painel administrativo"]
         UC20["Autenticar-se"]
         UC21["Acompanhar indicadores"]
         UC22["Cadastrar produto"]
         UC23["Editar produto"]
         UC24["Desativar produto"]
         UC25["Enviar imagem do produto"]
-        UC26["Consultar catálogo"]
+        UC26["Gerenciar categorias"]
         UC27["Consultar clientes"]
         UC28["Acompanhar pedidos"]
         UC29["Alterar status do pedido"]
@@ -125,51 +121,49 @@ flowchart LR
     UC23 -.->|includes| UC20
     UC24 -.->|includes| UC20
 
-    UC25 --- Camera
     painel --- Sistema
 ```
 
-> **O aplicativo é exclusivamente administrativo.** O login recusa quem não tem o papel
-> `admin` antes de gravar a sessão; não existe jornada de compra no app.
+> **Onde cada caso acontece.** Todos existem na web. O aplicativo cobre UC21, UC22, UC23,
+> UC24, UC25, UC27, UC28, UC29 e UC30 — ou seja, o admin também opera pelo celular, com a
+> imagem vindo da galeria do aparelho. UC26, o CRUD de categorias, segue só na web.
 
 ### Detalhamento — UC22 · Cadastrar produto
 
 | | |
 |---|---|
 | **Ator principal** | Administrador |
-| **Plataforma** | Aplicativo (também disponível na web) |
 | **Pré-condições** | Autenticado com papel `admin`; a categoria desejada já existe |
-| **Pós-condições** | Produto ativo no catálogo, visível na loja web |
-| **Requisitos** | RF-02.5, RF-03.1 a RF-03.4 |
+| **Pós-condições** | Produto ativo no catálogo, visível na vitrine |
+| **Requisitos** | RF-02.5, RF-03.1, RF-03.2, RF-03.3, RF-03.4 |
 
 **Fluxo principal**
 
 1. O administrador abre o formulário de novo produto
-2. Preenche nome, descrição, preço, estoque e escolhe a categoria
-3. Seleciona uma imagem da galeria do aparelho
+2. Preenche nome, descrição, valor, estoque e categoria
+3. Seleciona uma imagem
 4. O sistema valida a imagem (extensão, tipo MIME e tamanho) e a armazena com nome gerado
-5. O administrador confirma; o sistema valida preço e estoque
-6. O sistema cria o produto associado à URL da imagem
-7. O produto passa a aparecer na vitrine da loja web
+5. O sistema cria o produto associado à URL da imagem
+6. O produto passa a aparecer na vitrine
 
 **Fluxos alternativos**
 
-- **4a. Extensão ou tipo MIME não permitido** — **400**, e o formulário continua preenchido
-- **4b. Arquivo acima de 5 MB** — **413**
-- **5a. Preço zero ou negativo, ou estoque negativo** — o formulário sinaliza no campo e não
-  chega a chamar a API
+- **4a. Extensão ou tipo MIME não permitido** — o sistema recusa com **400** e o produto não
+  é criado
+- **4b. Arquivo acima de 5 MB** — o sistema recusa com **413**
 - **3a. Sem imagem** — o produto é criado sem foto e a vitrine exibe a imagem padrão
-- **1a. Usuário sem papel `admin`** — não alcança este ponto: o login já recusou
+- **1a. Usuário sem papel `admin`** — o `authorizeRole` responde **403** e o formulário nem
+  chega a ser submetido, porque a interface já não oferece a opção
 
 ### Detalhamento — UC29 · Alterar status do pedido
 
 | | |
 |---|---|
 | **Ator principal** | Administrador |
-| **Plataforma** | Aplicativo |
+| **Plataforma** | Aplicativo e web |
 | **Pré-condições** | Autenticado com papel `admin`; o pedido não está em estado final |
 | **Pós-condições** | Pedido no novo status; `data_pagamento` preenchida ao virar `pago` |
-| **Requisitos** | RF-06.5 |
+| **Requisitos** | RF-04.9, RF-04.10 |
 
 **Fluxo principal**
 
@@ -192,9 +186,8 @@ flowchart LR
 
 | Ator | Descrição |
 |---|---|
-| **Visitante** | Navega pelo catálogo da web sem estar autenticado. Não cria pedido |
-| **Cliente** | Visitante autenticado. Compra, gerencia endereços e acompanha pedidos, **na web** |
-| **Administrador** | Cliente com o papel `admin`. Opera catálogo, pedidos e indicadores, **pelo app** |
+| **Visitante** | Navega pelo catálogo sem estar autenticado. Não cria pedido |
+| **Cliente** | Visitante autenticado. Compra, gerencia endereços e acompanha pedidos |
+| **Administrador** | Cliente com o papel `admin`. Opera catálogo, pedidos e indicadores |
 | **API PC Forge** | Ator de sistema. Concentra regra de negócio, autenticação e autorização |
 | **Gateway de pagamento** | Ator externo (Mercado Pago). Processa o pagamento do pedido |
-| **Galeria do aparelho** | Fonte das imagens de produto enviadas pelo app |

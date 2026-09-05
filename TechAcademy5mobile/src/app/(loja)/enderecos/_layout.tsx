@@ -1,7 +1,7 @@
 import { Stack } from "expo-router";
 import { cores } from "@/theme";
 
-export default function LayoutAuth() {
+export default function LayoutEnderecos() {
   return (
     <Stack
       screenOptions={{
@@ -10,8 +10,8 @@ export default function LayoutAuth() {
         contentStyle: { backgroundColor: cores.fundo },
       }}
     >
-      <Stack.Screen name="login" options={{ title: "Entrar" }} />
-      <Stack.Screen name="cadastro" options={{ title: "Criar conta" }} />
+      <Stack.Screen name="index" options={{ title: "Meus endereços" }} />
+      <Stack.Screen name="[id]" options={{ title: "Endereço" }} />
     </Stack>
   );
 }

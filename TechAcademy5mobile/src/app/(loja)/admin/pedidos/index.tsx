@@ -150,7 +150,7 @@ export default function PedidosAdmin() {
       renderItem={({ item }) => (
         <PedidoLinha
           pedido={item}
-          aoAbrir={() => router.push(`/(painel)/pedidos/${item.id_pedido}`)}
+          aoAbrir={() => router.push(`/(loja)/admin/pedidos/${item.id_pedido}`)}
         />
       )}
       refreshControl={

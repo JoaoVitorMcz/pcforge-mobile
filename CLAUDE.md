@@ -13,16 +13,17 @@ fazer em seguida.
 |---|---|
 | `TechAcademy5back/` | API Express 5 + TypeScript, Sequelize, MySQL 8, JWT, Multer |
 | `TechAcademy5front/` | Web React 19: loja e painel administrativo |
-| `TechAcademy5mobile/` | App Expo (SDK 57) + Expo Router: painel administrativo da loja |
+| `TechAcademy5mobile/` | App Expo (SDK 57) + Expo Router: compra do cliente e painel do admin |
 | `nginx/` | Proxy reverso HTTPS para o ambiente web |
 | `docker-compose.yml` | MySQL, backend, frontend e Nginx |
 
-**A web atende o cliente; o app administra a loja.** A loja web tem vitrine, carrinho e
-checkout. O aplicativo é **exclusivamente administrativo**: recusa quem não é admin já no
-login, e faz CRUD de produtos com upload de imagem, gestão de pedidos, consulta de clientes e
-os indicadores. Cada plataforma serve uma persona, e nenhuma regra de negócio vive em duas.
+**O app e a web atendem as duas personas.** O cliente compra nos dois: catálogo, carrinho,
+checkout e "meus pedidos". O admin também opera nos dois, com CRUD de produtos, upload de
+imagem, gestão de pedidos e indicadores. A aba Admin do app só aparece para quem tem o papel.
+O CRUD de categorias segue só na web.
 
-O app também roda no navegador, a partir do mesmo código, via `react-native-web`.
+Desde a Fase M1.5 o app também roda no navegador, a partir do mesmo código, via
+`react-native-web`.
 
 ## Comandos
 
@@ -47,8 +48,7 @@ cd TechAcademy5mobile && npm run lint
 ```
 
 Contas criadas pelo seed, ambas com senha `Senha@123`:
-`admin@pcforge.com` (admin) e `cliente@pcforge.com` (cliente comum). **Só a de admin entra no
-app**; a de cliente serve para a loja web e para testar o 403.
+`admin@pcforge.com` (admin) e `cliente@pcforge.com` (cliente comum).
 
 ## Convenções
 
@@ -84,6 +84,9 @@ o problema.
   Use `decrement`/`increment`, nunca ler o estoque e escrever de volta: duas compras
   simultâneas perderiam uma das atualizações.
 - **`criarCliente` precisa vincular o papel em `cliente_role`.** Sem isso o token sai com
-  `permissoes: []` e as rotas com `authorizePermission` recusam quem acabou de se cadastrar.
+  `permissoes: []` e as rotas com `authorizePermission` recusam a compra de quem acabou de
+  se cadastrar.
+- **O carrinho persiste só `{ id_produto, quantidade }`.** Guardar o snapshot do produto
+  serviria preço velho e estouraria o limite recomendado do `SecureStore` no Android.
 - **O E2E roda no CI, não no `pre-push`.** A primeira compilação do CRA com o cache do
   webpack frio passa de 5 minutos, por isso `webServer.timeout` está em 600s.

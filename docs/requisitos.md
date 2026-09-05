@@ -4,10 +4,6 @@ Levantados a partir do que a API expõe hoje em
 [TechAcademy5back/src/routes/](../TechAcademy5back/src/routes/) e do que as duas aplicações
 consomem. A coluna **Acesso** reproduz a cadeia de middlewares real de cada rota.
 
-**Cada persona tem a sua plataforma:** o cliente compra na **loja web**, o administrador opera
-pelo **aplicativo**. A coluna *Onde* diz em qual interface o requisito é exercido — a API é
-sempre a mesma.
-
 Legenda de acesso:
 
 - **Público** — sem token
@@ -16,99 +12,98 @@ Legenda de acesso:
 - **Admin** — `authorizeRole(["admin"])`
 - **Permissão** — `authorizePermission([...])`, que decide pela ação e não pelo cargo
 
-Legenda de plataforma: 🌐 loja web · 📱 aplicativo · 🌐📱 ambas
-
 ## Requisitos funcionais
 
 ### RF-01 · Cadastro e autenticação
 
-| ID | Requisito | Rota | Acesso | Onde |
-|---|---|---|---|---|
-| RF-01.1 | O sistema deve permitir cadastrar um cliente com nome, e-mail, senha e CPF | `POST /clientes` | Público | 🌐 |
-| RF-01.2 | O sistema deve validar e-mail, CPF e força da senha no cadastro | — | — | 🌐 |
-| RF-01.3 | O sistema deve recusar e-mail ou CPF já cadastrados, com **409** | `POST /clientes` | Público | 🌐 |
-| RF-01.4 | O sistema deve autenticar por e-mail e senha, devolvendo um JWT com papéis e permissões | `POST /clientes/login` | Público | 🌐📱 |
-| RF-01.5 | O sistema deve atribuir o papel `cliente` a todo cadastro novo | — | — | 🌐 |
-| RF-01.6 | O aplicativo deve recusar, no login, quem não tem o papel `admin` | — | — | 📱 |
-| RF-01.7 | O sistema deve permitir consultar e editar o próprio perfil | `GET·PUT /clientes/:id` | Dono ou admin | 🌐 |
-| RF-01.8 | O sistema deve permitir desativar um cliente sem apagar o histórico | `DELETE /clientes/:id` | Dono ou admin | 🌐 |
-| RF-01.9 | O sistema deve listar todos os clientes para o administrador | `GET /clientes` | Admin | 🌐📱 |
+| ID | Requisito | Rota | Acesso |
+|---|---|---|---|
+| RF-01.1 | O sistema deve permitir cadastrar um cliente com nome, e-mail, senha e CPF | `POST /clientes` | Público |
+| RF-01.2 | O sistema deve validar e-mail, CPF e força da senha no cadastro | — | — |
+| RF-01.3 | O sistema deve recusar e-mail ou CPF já cadastrados, com **409** | `POST /clientes` | Público |
+| RF-01.4 | O sistema deve autenticar por e-mail e senha, devolvendo um JWT com papéis e permissões | `POST /clientes/login` | Público |
+| RF-01.5 | O sistema deve permitir consultar e editar o próprio perfil | `GET·PUT /clientes/:id` | Dono ou admin |
+| RF-01.6 | O sistema deve permitir desativar um cliente sem apagar o histórico | `DELETE /clientes/:id` | Dono ou admin |
+| RF-01.7 | O sistema deve listar todos os clientes para o administrador | `GET /clientes` | Admin |
+| RF-01.8 | O sistema deve atribuir o papel `cliente` a todo cadastro novo | — | — |
+
+RF-01.8 existe porque, sem o vínculo em `cliente_role`, o token sairia com `permissoes` vazio
+e as rotas protegidas por permissão recusariam a compra de quem acabou de se cadastrar.
 
 O primeiro administrador nasce do [seed](../TechAcademy5back/src/scripts/seed.ts):
 `criarCliente` só aceita `admin: true` de quem já está autenticado como admin, então não há
 como escalar privilégio pela API.
 
-RF-01.5 existe porque, sem o vínculo em `cliente_role`, o token sairia com `permissoes` vazio
-e as rotas protegidas por permissão recusariam a compra de quem acabou de se cadastrar.
-
 ### RF-02 · Catálogo
 
-| ID | Requisito | Rota | Acesso | Onde |
-|---|---|---|---|---|
-| RF-02.1 | O sistema deve listar os produtos ativos, com paginação opcional | `GET /produtos` | Público | 🌐 |
-| RF-02.2 | O sistema deve listar os produtos em destaque | `GET /produtos/destaque` | Público | 🌐 |
-| RF-02.3 | O sistema deve buscar produtos por nome | `GET /produtos/buscar` | Público | 🌐 |
-| RF-02.4 | O sistema deve exibir os detalhes de um produto | `GET /produtos/:id` | Público | 🌐 |
-| RF-02.5 | O sistema deve permitir criar, editar e desativar produtos | `POST·PUT·DELETE /produtos` | Admin | 🌐📱 |
-| RF-02.9 | O formulário deve recusar preço menor ou igual a zero e estoque negativo ou fracionário | — | — | 📱 |
-| RF-02.6 | O sistema deve listar e detalhar categorias | `GET /categorias`, `GET /categorias/:id` | Público | 🌐📱 |
-| RF-02.7 | O sistema deve permitir criar, editar e excluir categorias | `POST·PUT·DELETE /categorias` | Admin | 🌐 |
-| RF-02.8 | O sistema deve exibir o estoque disponível na vitrine | — | Público | 🌐 |
+| ID | Requisito | Rota | Acesso |
+|---|---|---|---|
+| RF-02.1 | O sistema deve listar os produtos ativos, com paginação opcional | `GET /produtos` | Público |
+| RF-02.2 | O sistema deve listar os produtos em destaque | `GET /produtos/destaque` | Público |
+| RF-02.3 | O sistema deve buscar produtos por nome | `GET /produtos/buscar` | Público |
+| RF-02.4 | O sistema deve exibir os detalhes de um produto | `GET /produtos/:id` | Público |
+| RF-02.5 | O sistema deve permitir criar, editar e desativar produtos | `POST·PUT·DELETE /produtos` | Admin |
+| RF-02.9 | O formulário de produto deve recusar preço menor ou igual a zero e estoque negativo ou fracionário | — | Admin |
+| RF-02.6 | O sistema deve listar e detalhar categorias | `GET /categorias`, `GET /categorias/:id` | Público |
+| RF-02.7 | O sistema deve permitir criar, editar e excluir categorias | `POST·PUT·DELETE /categorias` | Admin |
+| RF-02.8 | O sistema deve exibir o estoque disponível na vitrine | — | Público |
 
 ### RF-03 · Imagens de produto
 
-| ID | Requisito | Rota | Acesso | Onde |
-|---|---|---|---|---|
-| RF-03.1 | O sistema deve receber e armazenar a imagem de um produto | `POST /upload/imagem` | Admin | 🌐📱 |
-| RF-03.2 | O sistema deve aceitar apenas `.jpg`, `.jpeg`, `.png`, `.webp` e `.gif`, validando **extensão e tipo MIME**, e recusar com **400** | `POST /upload/imagem` | Admin | 🌐📱 |
-| RF-03.3 | O sistema deve recusar arquivos acima de **5 MB**, com **413** | `POST /upload/imagem` | Admin | 🌐📱 |
-| RF-03.4 | O sistema deve gerar o nome do arquivo no servidor, de modo que dois envios com o mesmo nome original não se sobrescrevam | — | — | — |
-| RF-03.5 | O sistema deve exibir uma imagem padrão quando o produto não tiver foto | — | Público | 🌐 |
+| ID | Requisito | Rota | Acesso |
+|---|---|---|---|
+| RF-03.1 | O sistema deve receber e armazenar a imagem de um produto | `POST /upload/imagem` | Admin |
+| RF-03.2 | O sistema deve aceitar apenas `.jpg`, `.jpeg`, `.png`, `.webp` e `.gif`, validando **extensão e tipo MIME**, e recusar com **400** | `POST /upload/imagem` | Admin |
+| RF-03.3 | O sistema deve recusar arquivos acima de **5 MB**, com **413** | `POST /upload/imagem` | Admin |
+| RF-03.4 | O sistema deve gerar o nome do arquivo no servidor, de modo que dois envios com o mesmo nome original não se sobrescrevam | — | — |
+| RF-03.5 | O sistema deve exibir uma imagem padrão quando o produto não tiver foto | — | Público |
 
 ### RF-04 · Pedidos
 
-| ID | Requisito | Rota | Acesso | Onde |
-|---|---|---|---|---|
-| RF-04.1 | O sistema deve permitir criar um pedido a partir do carrinho | `POST /pedidos` | Permissão `pedido:criar` | 🌐 |
-| RF-04.2 | O sistema deve exigir um endereço de entrega **do próprio cliente** | — | Permissão | 🌐 |
-| RF-04.3 | O sistema deve registrar o preço unitário vigente no momento da compra | — | — | 🌐 |
-| RF-04.4 | O sistema deve recusar com **409** a compra acima do estoque, sem gravar nada | — | — | 🌐 |
-| RF-04.5 | O sistema deve **debitar o estoque** de cada produto ao criar o pedido | — | — | 🌐 |
-| RF-04.6 | O sistema deve **devolver o estoque** ao cancelar o pedido | `PATCH /pedidos/:id/cancelar` | Permissão `pedido:atualizar` | 🌐 |
-| RF-04.7 | O sistema deve listar os pedidos de um cliente | `GET /pedidos/cliente/:id_cliente` | Dono ou admin | 🌐 |
-| RF-04.8 | O sistema deve gerenciar os itens de um pedido, ajustando o estoque pela diferença | `GET·POST·PATCH·DELETE /itens-pedido` | Autenticado | 🌐 |
-
-### RF-05 · Endereços
-
-| ID | Requisito | Rota | Acesso | Onde |
-|---|---|---|---|---|
-| RF-05.1 | O sistema deve permitir cadastrar um endereço | `POST /enderecos` | Autenticado | 🌐 |
-| RF-05.2 | O sistema deve listar os endereços de um cliente | `GET /enderecos/cliente/:id_cliente` | Dono ou admin | 🌐 |
-| RF-05.3 | O sistema deve permitir editar e excluir um endereço | `PUT·DELETE /enderecos/:id` | Autenticado | 🌐 |
-| RF-05.4 | O sistema deve listar todos os endereços para o administrador | `GET /enderecos` | Admin | 🌐 |
-
-### RF-06 · Painel administrativo
-
-| ID | Requisito | Rota | Acesso | Onde |
-|---|---|---|---|---|
-| RF-06.1 | O sistema deve apresentar faturamento e total de pedidos | `GET /admin/dashboard` | Admin | 🌐📱 |
-| RF-06.2 | O sistema deve apresentar a contagem de pedidos por status | `GET /admin/dashboard` | Admin | 🌐📱 |
-| RF-06.3 | O sistema deve apresentar o total de clientes e produtos ativos | `GET /admin/dashboard` | Admin | 🌐📱 |
-| RF-06.4 | O sistema deve destacar os produtos com estoque baixo | `GET /admin/dashboard` | Admin | 🌐📱 |
-| RF-06.5 | O sistema deve permitir alterar o status de um pedido | `PATCH /pedidos/:id/status` | Admin | 📱 |
-| RF-06.6 | O sistema deve aceitar apenas transições válidas de status, recusando as demais com **409** | — | — | 📱 |
-| RF-06.7 | A interface deve oferecer apenas as transições válidas a partir do estado atual | — | — | 📱 |
-| RF-06.8 | O sistema deve listar todos os pedidos, com filtro por status | `GET /pedidos` | Admin | 📱 |
+| ID | Requisito | Rota | Acesso |
+|---|---|---|---|
+| RF-04.1 | O sistema deve permitir criar um pedido a partir do carrinho | `POST /pedidos` | Permissão `pedido:criar` |
+| RF-04.2 | O sistema deve exigir um endereço de entrega **do próprio cliente** | — | Permissão |
+| RF-04.3 | O sistema deve registrar o preço unitário vigente no momento da compra | — | — |
+| RF-04.4 | O sistema deve recusar com **409** a compra acima do estoque, sem gravar nada | — | — |
+| RF-04.5 | O sistema deve **debitar o estoque** de cada produto ao criar o pedido | — | — |
+| RF-04.6 | O sistema deve **devolver o estoque** ao cancelar o pedido | `PATCH /pedidos/:id/cancelar` | Permissão `pedido:atualizar` |
+| RF-04.7 | O sistema deve listar os pedidos de um cliente | `GET /pedidos/cliente/:id_cliente` | Dono ou admin |
+| RF-04.8 | O sistema deve listar todos os pedidos para o administrador | `GET /pedidos` | Admin |
+| RF-04.9 | O sistema deve permitir ao administrador alterar o status de um pedido | `PATCH /pedidos/:id/status` | Admin |
+| RF-04.10 | O sistema deve aceitar apenas transições válidas de status, recusando as demais com **409** | — | Admin |
+| RF-04.11 | O sistema deve gerenciar os itens de um pedido, ajustando o estoque pela diferença | `GET·POST·PATCH·DELETE /itens-pedido` | Autenticado |
 
 As transições permitidas são `pendente → pago → em_preparacao → enviado → entregue`, com
 `cancelado` alcançável dos três primeiros. `entregue` e `cancelado` são **terminais**.
 
+A interface só oferece as transições válidas a partir do estado atual, mas a API revalida:
+a cópia da tabela no cliente é conveniência, não a regra.
+
+### RF-05 · Endereços
+
+| ID | Requisito | Rota | Acesso |
+|---|---|---|---|
+| RF-05.1 | O sistema deve permitir cadastrar um endereço | `POST /enderecos` | Autenticado |
+| RF-05.2 | O sistema deve listar os endereços de um cliente | `GET /enderecos/cliente/:id_cliente` | Dono ou admin |
+| RF-05.3 | O sistema deve permitir editar e excluir um endereço | `PUT·DELETE /enderecos/:id` | Autenticado |
+| RF-05.4 | O sistema deve listar todos os endereços para o administrador | `GET /enderecos` | Admin |
+
+### RF-06 · Painel administrativo
+
+| ID | Requisito | Rota | Acesso |
+|---|---|---|---|
+| RF-06.1 | O sistema deve apresentar faturamento e total de pedidos | `GET /admin/dashboard` | Admin |
+| RF-06.2 | O sistema deve apresentar a contagem de pedidos por status | `GET /admin/dashboard` | Admin |
+| RF-06.3 | O sistema deve apresentar o total de clientes e produtos ativos | `GET /admin/dashboard` | Admin |
+| RF-06.4 | O sistema deve destacar os produtos com estoque baixo | `GET /admin/dashboard` | Admin |
+
 ### RF-07 · Pagamento
 
-| ID | Requisito | Rota | Acesso | Onde |
-|---|---|---|---|---|
-| RF-07.1 | O sistema deve iniciar um checkout externo para o pedido | `POST /pagamentos/mercado-pago/checkout` | Autenticado | 🌐 |
-| RF-07.2 | O sistema deve confirmar o pagamento e registrar a data | `POST /pagamentos/mercado-pago/confirmar` | Autenticado | 🌐 |
+| ID | Requisito | Rota | Acesso |
+|---|---|---|---|
+| RF-07.1 | O sistema deve iniciar um checkout externo para o pedido | `POST /pagamentos/mercado-pago/checkout` | Autenticado |
+| RF-07.2 | O sistema deve confirmar o pagamento e registrar a data | `POST /pagamentos/mercado-pago/confirmar` | Autenticado |
 
 ### RF-08 · Controle de acesso
 
@@ -118,9 +113,7 @@ As transições permitidas são `pendente → pago → em_preparacao → enviado
 | RF-08.2 | O sistema deve recusar usuário autenticado sem o papel exigido, com **403** | `authorizeRole` |
 | RF-08.3 | O sistema deve permitir que uma rota declare mais de um papel aceito | `authorizeRole(["admin","editor"])` |
 | RF-08.4 | O sistema deve impedir que um cliente leia ou altere dados de outro | `selfOrAdminMiddleware` |
-| RF-08.5 | O sistema deve recusar usuário autenticado sem a permissão exigida, com **403** | `authorizePermission` |
-| RF-08.6 | O aplicativo deve recusar quem não é admin no login, antes de gravar a sessão | `AuthContext.tsx` |
-| RF-08.7 | O aplicativo deve redirecionar quem chegar ao painel por navegação direta | `(painel)/_layout.tsx` |
+| RF-08.5 | O app deve esconder a área administrativa de quem não é admin, e redirecionar quem chegar por navegação direta | `(loja)/admin/_layout.tsx` |
 
 Detalhamento em [rbac.md](rbac.md).
 
@@ -137,8 +130,8 @@ Detalhamento em [rbac.md](rbac.md).
 | RNF-01.5 | A autorização deve ser verificada no servidor, não só na interface | Três camadas independentes; esconder a aba não é proteção |
 | RNF-01.6 | O tráfego web deve ser servido por HTTPS | Nginx como proxy reverso ([mkcert.md](mkcert.md)) |
 | RNF-01.7 | O token deve ser guardado em armazenamento seguro no dispositivo | `expo-secure-store` no nativo; `localStorage` só na build web de demonstração |
-| RNF-01.9 | O estoque deve ser debitado e devolvido dentro de transação, nunca parcialmente | `sequelize.transaction` em `pedido.service` e no cancelamento |
 | RNF-01.8 | O upload não pode aceitar arquivo executável disfarçado de imagem | Validação de extensão **e** MIME, com `UploadValidationError` |
+| RNF-01.9 | O estoque deve ser debitado e devolvido dentro de transação, nunca parcialmente | `sequelize.transaction` em `pedido.service` e no cancelamento |
 
 ### RNF-02 · Confiabilidade
 

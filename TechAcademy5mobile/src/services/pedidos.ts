@@ -51,3 +51,39 @@ export const atualizarStatus = (
     corpo: { status },
     token,
   });
+
+/** Itens que o checkout envia: o backend resolve preco e valida estoque. */
+export interface ItemDoPedido {
+  id_produto: number;
+  quantidade: number;
+}
+
+/**
+ * Cria o pedido a partir do carrinho.
+ *
+ * POST /pedidos aceita os itens no proprio corpo, entao o carrinho e local e
+ * /itens-pedido nao entra no checkout. O backend confere estoque, congela o
+ * preco e da baixa, tudo em uma transacao.
+ *
+ * Exige a permissao pedido:criar, que o papel "cliente" recebe no cadastro.
+ */
+export const criarPedido = (
+  token: string,
+  dados: { id_endereco_entrega: number; itens: ItemDoPedido[] }
+): Promise<{ pedido: Pedido }> =>
+  requisitar<{ pedido: Pedido }>("/pedidos", { metodo: "POST", corpo: dados, token });
+
+/** Pedidos do proprio cliente. A rota e protegida por selfOrAdminMiddleware. */
+export async function listarPedidosDoCliente(token: string, idCliente: number): Promise<Pedido[]> {
+  const resposta = await requisitar<Pedido[] | Paginado<Pedido>>(
+    `/pedidos/cliente/${idCliente}`,
+    { token }
+  );
+  const lista = Array.isArray(resposta) ? resposta : resposta.dados;
+
+  return lista.map((pedido) => ({ ...pedido, valor: Number(pedido.valor ?? 0) }));
+}
+
+/** Cancelar devolve o estoque no backend; so vale para pedidos nao enviados. */
+export const cancelarPedido = (token: string, idPedido: number): Promise<{ mensagem: string }> =>
+  requisitar<{ mensagem: string }>(`/pedidos/${idPedido}/cancelar`, { metodo: "PATCH", token });

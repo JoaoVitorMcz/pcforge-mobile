@@ -112,7 +112,7 @@ export default function ProdutosAdmin() {
           />
 
           <View style={estilos.acaoNovo}>
-            <Botao titulo="Novo produto" aoPressionar={() => router.push("/(painel)/produtos/novo")} />
+            <Botao titulo="Novo produto" aoPressionar={() => router.push("/(loja)/admin/produtos/novo")} />
           </View>
         </>
       }
@@ -120,7 +120,7 @@ export default function ProdutosAdmin() {
       renderItem={({ item }) => (
         <ProdutoLinha
           produto={item}
-          aoAbrir={() => router.push(`/(painel)/produtos/${item.id_produto}`)}
+          aoAbrir={() => router.push(`/(loja)/admin/produtos/${item.id_produto}`)}
         />
       )}
       refreshControl={

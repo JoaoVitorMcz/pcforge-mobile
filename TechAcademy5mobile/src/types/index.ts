@@ -30,6 +30,9 @@ export interface Endereco {
   cep?: string | null;
 }
 
+/** Campos que o formulario de endereco manipula (sem os ids). */
+export type EnderecoFormulario = Omit<Endereco, "id_endereco" | "id_cliente">;
+
 export interface Categoria {
   id_categoria: number;
   nome: string;
@@ -66,6 +69,12 @@ export interface Pedido {
   cliente?: Pick<Cliente, "id_cliente" | "nome" | "email" | "telefone">;
   endereco_entrega?: Endereco;
   itens?: ItemPedido[];
+}
+
+/** Item do carrinho local: o produto hidratado mais a quantidade escolhida. */
+export interface ItemCarrinho {
+  produto: Produto;
+  quantidade: number;
 }
 
 export interface Dashboard {

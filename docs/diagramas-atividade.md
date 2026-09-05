@@ -4,14 +4,11 @@ Os três fluxos com mais ramificação no PC Forge: o checkout, onde a regra de 
 se a compra pode acontecer; o cancelamento, que desfaz a reserva de estoque; e o upload de
 imagem, onde a validação decide se o arquivo entra.
 
-> **Onde cada um acontece.** Checkout e cancelamento são da **loja web** — o aplicativo é o
-> painel administrativo e não tem carrinho. O upload acontece nas duas plataformas.
-
 ---
 
 ## Atividade 1 — Checkout do pedido
 
-Cobre RF-04.1 a RF-04.4. Do carrinho até o pedido gravado, com as três barreiras que podem
+Cobre RF-04.1 a RF-04.3. Do carrinho até o pedido gravado, com as três barreiras que podem
 interromper: sessão, endereço e estoque.
 
 ```mermaid
@@ -43,27 +40,18 @@ flowchart TD
     confirmar --> enviar["POST /pedidos<br/>com itens e endereço"]
 
     enviar --> token{Token<br/>válido?}
-    token -->|Não| erro401[Responder 401:<br/>encerrar sessão e pedir login]
+    token -->|Não| erro401[Sessão expirada:<br/>encerrar sessão e pedir login]
     erro401 --> fimToken([Fim])
 
-    token -->|Sim| permissao{"Tem a permissão<br/>pedido:criar?"}
-    permissao -->|Não| erro403[Responder 403]
-    erro403 --> fim403([Fim])
-
-    permissao -->|Sim| enderecoDono{Endereço pertence<br/>ao cliente?}
-    enderecoDono -->|Não| erro403b[Responder 403]
-    erro403b --> fim403b([Fim])
-
-    enderecoDono -->|Sim| estoque{Estoque suficiente<br/>para todos os itens?}
+    token -->|Sim| estoque{Estoque suficiente<br/>para todos os itens?}
     estoque -->|Não| erroEstoque["Responder 409 com o produto<br/>e a quantidade disponível"]
     erroEstoque --> ajustar[Cliente ajusta o carrinho]
     ajustar --> total
 
     estoque -->|Sim| transacao[/Início da transação/]
-    transacao --> criarPedido[Criar registro em 'pedido'<br/>com status pendente]
+    transacao --> criarPedido[Criar registro em 'pedido'<br/>vinculado ao cliente e ao endereço]
     criarPedido --> criarItens[Criar 'itempedido' com<br/>preco_unitario congelado]
     criarItens --> baixa[Dar baixa no estoque<br/>de cada produto]
-
     baixa --> deuCerto{Todas as etapas<br/>concluíram?}
     deuCerto -->|Não| rollback[/Desfazer a transação/]
     rollback --> semGravar["Nada gravado: sem pedido,<br/>sem itens, sem estoque descontado"]
@@ -91,7 +79,7 @@ atualizações se dois pedidos chegassem ao mesmo tempo.
 
 ## Atividade 2 — Cancelamento de pedido
 
-O caminho inverso da Atividade 1: o estoque volta. Cobre RF-04.6.
+O caminho inverso da Atividade 1: o estoque volta.
 
 ```mermaid
 flowchart TD
@@ -126,12 +114,11 @@ recusado com **409** antes de qualquer `increment`.
 
 Cobre RF-03.1 a RF-03.4. Implementado em
 [config/upload.ts](../TechAcademy5back/src/config/upload.ts) e coberto pela suíte
-`upload.test.ts`. Acontece nas duas plataformas: no painel do app, escolhendo a foto do
-aparelho, e na web, pelo formulário de produto.
+`upload.test.ts`.
 
 ```mermaid
 flowchart TD
-    inicio([Início]) --> selecionar[Administrador seleciona<br/>a imagem]
+    inicio([Início]) --> selecionar[Administrador seleciona<br/>a imagem no formulário]
     selecionar --> enviar["POST /upload/imagem<br/>multipart/form-data"]
 
     enviar --> auth{authMiddleware:<br/>token válido?}
@@ -157,14 +144,14 @@ flowchart TD
 
     mime -->|Sim| tamanho{Tamanho<br/>até 5 MB?}
     tamanho -->|Não| erroTamanho[Multer lança<br/>LIMIT_FILE_SIZE]
-    erroTamanho --> r413[Responder 413<br/>Arquivo excede o tamanho máximo]
+    erroTamanho --> r413[Responder 413<br/>Arquivo muito grande]
     r413 --> fim413([Fim])
 
     tamanho -->|Sim| nome["Gerar nome no servidor:<br/>timestamp + aleatório + extensão"]
     nome --> gravar[Gravar em UPLOAD_DIR]
     gravar --> url["Montar a URL /uploads/nome"]
     url --> r201[Responder 201<br/>com a URL]
-    r201 --> associar[Salvar o produto<br/>com a URL da imagem]
+    r201 --> associar[Administrador salva o produto<br/>com a URL da imagem]
     associar --> fim([Fim])
 ```
 
@@ -180,7 +167,3 @@ primeiro. É o que o teste de colisão verifica.
 
 > O erro de validação é distinguido por `instanceof UploadValidationError`, nunca por
 > comparação de texto da mensagem — reescrever o texto viraria um 500 silencioso.
-
-**No app, o upload acontece na escolha da foto, não no salvamento do produto.** Assim o 400 de
-formato e o 413 de tamanho aparecem na hora, em vez de derrubar um formulário inteiro já
-preenchido.

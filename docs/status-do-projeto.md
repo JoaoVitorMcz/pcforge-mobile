@@ -7,7 +7,7 @@ decisões foram tomadas assim.
 > Fase D, listados abaixo — este aqui só rastreia o andamento. Não marque aqueles itens da
 > rubrica como prontos por causa deste documento.
 
-Última atualização: o app virou o painel administrativo (Fase P), com as correções da auditoria.
+Última atualização: fim da M2, com a auditoria do backend e a área admin ampliada no app.
 
 ## Placar da rubrica
 
@@ -30,20 +30,16 @@ decisões foram tomadas assim.
 
 **Total: 11,0 / 12,0**
 
-O único item em aberto é **usabilidade, compatibilidade e segurança (1,0)**, da Fase M3: falta
-rodar num aparelho real, registrar as evidências e tratar 401 fora do login.
+O único item em aberto é **usabilidade, compatibilidade e segurança (1,0)**, da Fase M3:
+falta rodar num aparelho real, registrar as evidências e tratar 401 fora do login.
 
-O que fechou nesta fase:
+O que fechou na M2:
 
-- **Controle admin × usuário (2,0)** — o app inteiro é restrito: o login recusa quem não é
-  admin antes de gravar a sessão, o layout do painel redireciona quem chega por deep link e a
-  API responde 403. `authorizePermission` passou a valer em rotas reais, então as tabelas
-  `permissao` e `role_permissao` sustentam decisão ([rbac.md](rbac.md)).
-- **CRUD completo (1,0)** — passou a ser o de **Produtos**, no painel. O de Endereços saiu
-  junto com as telas de cliente.
-- **Regra de negócio (0,5)** — validação do formulário de produto (preço maior que zero,
-  estoque inteiro e não negativo), máquina de estados do pedido e, no backend, a baixa e a
-  devolução de estoque, que **não existiam**.
+- **Controle admin × usuário (2,0)** — três camadas independentes mais a demonstração: a
+  mesma navegação vista por um cliente e por um admin. `authorizePermission` passou a valer
+  em rotas reais, então `permissao` e `role_permissao` sustentam decisão ([rbac.md](rbac.md)).
+- **Regra de negócio (0,5)** — carrinho respeitando estoque, checkout exigindo endereço, 409
+  tratado na tela, e no backend a baixa e a devolução de estoque, que **não existiam**.
 
 ## Fases
 
@@ -53,10 +49,6 @@ O que fechou nesta fase:
 - `GET /admin/dashboard`, restrito a admin, com agregações de pedidos e estoque
 - App Expo com Expo Router: login, cadastro, catálogo, perfil e dashboard do admin
 - CRUD completo de endereços no app
-
-> As telas de cliente desta fase (cadastro, catálogo, perfil, endereços) foram **removidas na
-> Fase P**, quando o app virou painel administrativo. O CRUD da rubrica passou a ser o de
-> produtos.
 
 ### M1.5 — base web do app · concluída
 
@@ -78,17 +70,20 @@ restaurados; o `tsconfig.json` tinha perdido `.expo/types` do `include`; e as 26
 antigas com espaço e acento no nome ficaram duplicadas com as novas — foram removidas, o
 `placeholder.png` que faltava foi criado e o seed passou a preencher `imagem`.
 
-### P — o app vira o painel administrativo · concluída
+### M2 — carrinho e pedidos · concluída
 
-Mudança de escopo: o aplicativo é **exclusivamente para administradores**. A compra fica na
-loja web, então saíram cadastro, vitrine, perfil e o CRUD de endereços. `(loja)/admin/*`
-achatou para o grupo `(painel)/*` e a guarda de admin subiu para o layout do grupo.
+- [x] `CarrinhoContext` portando as regras de `TechAcademy5front/src/context/CarrinhoContext.jsx`
+- [x] Tela de carrinho: ajustar quantidade, remover e total
+- [x] Checkout na própria tela do carrinho, via `POST /pedidos`, exigindo endereço
+- [x] "Meus pedidos" com `GET /pedidos/cliente/:id` e cancelamento
+- [x] Regras de negócio: estoque no carrinho, endereço obrigatório, 409 tratado
+- [ ] Evidências do controle de acesso: prints da mesma navegação por cliente e por admin
 
-- [x] CRUD de produtos no app: criar, editar e desativar, com formulário compartilhado
-- [x] Upload de imagem pela galeria do aparelho (`expo-image-picker`)
-- [x] Gestão de pedidos: lista com filtro por status e detalhe com mudança de status
-- [x] Login recusa quem não é admin, antes de gravar a sessão
-- [x] Limpeza dos órfãos: `services/enderecos.ts`, `ProdutoCard`, validações de CPF e CEP
+O carrinho é **local**: `POST /pedidos` aceita os itens no corpo, então `/itens-pedido` não
+entra no checkout — a descrição anterior desta fase estava errada nesse ponto.
+
+A área admin do app cresceu junto: CRUD de produtos com upload pela galeria do aparelho e
+gestão de pedidos com máquina de estados.
 
 **Auditoria das fases anteriores.** Nove problemas encontrados e corrigidos:
 
@@ -105,11 +100,9 @@ achatou para o grupo `(painel)/*` e a guarda de admin subiu para o layout do gru
 | 9 | `models/index.js` e `config/config.js`, scaffolding do sequelize-cli | Removidos |
 
 O item 2 é o mais grave: era a regra de negócio que a rubrica cobra, e não existia.
-
 ### M3 — validação e evidências
 
-Único item de rubrica em aberto: **1,0 de usabilidade, compatibilidade e segurança**. É a fase
-que falta.
+Único item de rubrica em aberto. É a fase que falta:
 
 - [ ] Rodar em Android e em um segundo aparelho ou emulador, registrando prints
       — a build web já dá uma segunda plataforma, faltam os prints e um aparelho real
@@ -120,24 +113,23 @@ que falta.
       listas usam `EstadoLista` com "Tentar novamente"
 - [ ] Conferir que o token nunca aparece em log
 - [ ] **Evidências do controle de acesso**: a mesma navegação vista por um admin e por um
-      cliente, mostrando que o cliente nem passa do login
+      cliente, mostrando que a aba Admin só aparece para um
 
 ### D — documentação de Engenharia · concluída
 
 **4,0 pontos, o mesmo peso do app mobile inteiro.** Saíram dos models e das rotas que já
 existiam, sem depender das outras fases.
 
-- [x] [contextualizacao.md](contextualizacao.md) — problema, as duas personas com a sua
-      plataforma, e as seis etapas da evolução até o app virar painel
+- [x] [contextualizacao.md](contextualizacao.md) — problema, duas personas e as cinco etapas
+      da evolução web → web + mobile + navegador
 - [x] [der.md](der.md) — ER das 10 tabelas (6 do domínio + 4 do RBAC), com as decisões de
       modelagem e a tabela de cardinalidades
 - [x] [requisitos.md](requisitos.md) — 8 grupos de requisitos funcionais mapeados rota a rota,
-      com o nível de acesso e **a plataforma** de cada um, e 5 grupos de não funcionais
-- [x] [casos-de-uso.md](casos-de-uso.md) — cliente compra na web; admin opera pelo app
-- [x] [diagramas-atividade.md](diagramas-atividade.md) — checkout; cancelamento com devolução
-      de estoque; upload com validação
+      com o nível de acesso de cada uma, e 5 grupos de não funcionais
+- [x] [casos-de-uso.md](casos-de-uso.md) — cliente compra pelo app; admin gerencia a loja
+- [x] [diagramas-atividade.md](diagramas-atividade.md) — checkout; upload com validação
 - [x] [diagramas-sequencia.md](diagramas-sequencia.md) — login com JWT + RBAC; criar pedido
-      Web → API → MySQL; admin muda o status pelo app
+      App → API → MySQL
 
 Todos em Markdown com Mermaid, que o GitHub renderiza direto. Os blocos foram validados com
 `@mermaid-js/mermaid-cli`, então nenhum diagrama depende de o avaliador ter ferramenta extra.
@@ -145,11 +137,13 @@ Se o professor exigir imagem, `mmdc` exporta para PNG sem retrabalho.
 
 ## Decisões de arquitetura
 
-- **A web atende o cliente; o app administra a loja.** Cada plataforma serve uma persona, e
-  nenhuma regra de negócio vive em duas. Substitui as duas regras anteriores ("o app expõe só
-  o dashboard" e "o app lê, a web escreve"): duplicar a jornada de compra dava o mesmo
-  trabalho duas vezes e não resolvia o problema de quem **opera** a loja e precisa fazer isso
-  longe do computador — o estoque acaba no depósito, não no escritório.
+- **O app atende as duas personas; a web também.** O cliente compra pelo app ou pelo site, e
+  o admin opera dos dois lados. O que justifica o app não é ter algo exclusivo, e sim onde a
+  pessoa está: o estoque acaba no depósito, não na mesa do escritório. Substitui as regras
+  anteriores ("o app expõe só o dashboard" e "o app lê, a web escreve").
+- **O carrinho é local, não uma entidade da API.** `POST /pedidos` aceita os itens no corpo,
+  então `/itens-pedido` fica para ajustar um pedido já criado. Um carrinho no servidor exigiria
+  criar o pedido antes de o cliente decidir comprar, e sujaria a tabela com rascunhos.
 - **O app roda em nativo e no navegador a partir do mesmo código.** `react-native-web`
   dá uma segunda plataforma para a demonstração sem manter dois projetos. O custo é a
   sessão precisar de dois back-ends de armazenamento — daí o `localStorage` na web.
@@ -180,10 +174,9 @@ Se o professor exigir imagem, `mmdc` exporta para PNG sem retrabalho.
   não se perde cobertura, e o hook trava o push enquanto espera o dev server do CRA
   subir.
 - **Os PRs vão para a `main` por engano.** O GitHub sugere `main` como base porque é o branch
-  padrão do repositório, e foi para lá que a última leva foi. A `dev` já foi alinhada por
+  padrão do repositório, e foi para lá que uma leva inteira foi. A `dev` já foi alinhada por
   fast-forward, mas **é preciso trocar a base para `dev` a cada PR** — ou mudar o branch
-  padrão do repositório no GitHub, que resolve de vez.
-
+  padrão do repositório no GitHub, que resolve de vez. Hoje `main` e `dev` coincidem.
 - **O boolean `admin` convive com o RBAC.** O token carrega `roles` e `admin` ao mesmo
   tempo, e `extrairRoles` deriva um do outro nos dois sentidos. É proposital: web e mobile
   ainda leem `admin`. Remover o boolean quando as duas pontas passarem a ler `roles` —
@@ -195,8 +188,8 @@ Se o professor exigir imagem, `mmdc` exporta para PNG sem retrabalho.
   tarefa integrando de volta na `dev`. Um commit squashed sem corpo também dificulta
   revisar e reverter em partes. Combinar com a dupla antes da próxima entrega.
 - **A cópia da máquina de estados no app pode divergir do backend.** `TRANSICOES` em
-  `services/pedidos.ts` espelha `TRANSICOES_DE_STATUS` do controller. É proposital — a tela
-  só oferece o que a API aceita — mas mudar um lado exige mudar o outro. A API continua sendo
+  `services/pedidos.ts` espelha `TRANSICOES_DE_STATUS` do controller. É proposital — a tela só
+  oferece o que a API aceita — mas mudar um lado exige mudar o outro. A API continua sendo
   quem decide, então a divergência causa botão a mais ou a menos, nunca dado errado.
 - **Acesso do celular pela LAN nunca testado num aparelho real.** O bundle compila e a
   API responde pelo IP da máquina, mas ninguém abriu o app em um telefone. Se não

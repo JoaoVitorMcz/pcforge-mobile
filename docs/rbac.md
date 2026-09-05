@@ -128,8 +128,8 @@ o token é novo e o usuário realmente não tem permissão alguma.
 
 **O papel nasce no cadastro.** `criarCliente` vincula o cliente novo ao papel `cliente` em
 `cliente_role`. Sem isso, só as contas do seed teriam permissões, e todo cadastro pela API
-sairia com `permissoes: []` — barrado nas três rotas acima. O seed também corrige
-retroativamente quem já estava gravado sem papel.
+sairia com `permissoes: []` — barrado nas três rotas acima, ou seja, sem conseguir comprar. O
+seed também corrige retroativamente quem já estava gravado sem papel.
 
 ## A ordem dos middlewares importa
 

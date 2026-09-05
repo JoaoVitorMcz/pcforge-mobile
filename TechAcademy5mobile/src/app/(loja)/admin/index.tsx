@@ -132,19 +132,19 @@ export default function DashboardAdmin() {
           icone="▣"
           titulo="Produtos"
           descricao="Catálogo, preços e estoque"
-          aoPressionar={() => router.push("/(painel)/produtos")}
+          aoPressionar={() => router.push("/(loja)/admin/produtos")}
         />
         <Atalho
           icone="≡"
           titulo="Pedidos"
           descricao="Acompanhar e mudar o status"
-          aoPressionar={() => router.push("/(painel)/pedidos")}
+          aoPressionar={() => router.push("/(loja)/admin/pedidos")}
         />
         <Atalho
           icone="◉"
           titulo="Clientes"
           descricao="Pessoas cadastradas na loja"
-          aoPressionar={() => router.push("/(painel)/clientes")}
+          aoPressionar={() => router.push("/(loja)/admin/clientes")}
         />
       </View>
 

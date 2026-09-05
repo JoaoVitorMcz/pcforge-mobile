@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
-import { useRouter } from "expo-router";
+import { Link, useRouter } from "expo-router";
 import { Botao } from "@/components/Botao";
 import { CampoTexto } from "@/components/CampoTexto";
-import { AcessoRestritoError, useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { ApiError } from "@/services/api";
 import { cores, espaco, fonte } from "@/theme";
 import { emailValido } from "@/validacao";
@@ -44,11 +44,9 @@ export default function Login() {
 
     try {
       await entrar(emailNormalizado, senha);
-      router.replace("/(painel)");
+      router.replace("/(loja)");
     } catch (e) {
-      if (e instanceof AcessoRestritoError) {
-        setErro("Acesso restrito: este aplicativo é o painel administrativo da loja.");
-      } else if (e instanceof ApiError && e.status === 401) {
+      if (e instanceof ApiError && e.status === 401) {
         setErro("E-mail ou senha incorretos.");
       } else if (e instanceof TypeError) {
         setErro("Não foi possível conectar ao servidor.");
@@ -68,7 +66,7 @@ export default function Login() {
       <ScrollView contentContainerStyle={estilos.conteudo} keyboardShouldPersistTaps="handled">
         <View style={estilos.formulario}>
           <Text style={estilos.titulo}>PC Forge</Text>
-          <Text style={estilos.subtitulo}>Painel administrativo</Text>
+          <Text style={estilos.subtitulo}>Componentes para o seu setup</Text>
 
           <CampoTexto
             rotulo="E-mail"
@@ -100,9 +98,12 @@ export default function Login() {
 
           <Botao titulo="Entrar" aoPressionar={aoEntrar} carregando={enviando} />
 
-          <Text style={estilos.rodapeTexto}>
-            Acesso exclusivo da administração. Clientes compram pela loja web.
-          </Text>
+          <View style={estilos.rodape}>
+            <Text style={estilos.rodapeTexto}>Ainda nao tem conta? </Text>
+            <Link href="/(auth)/cadastro" style={estilos.link}>
+              Cadastre-se
+            </Link>
+          </View>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -147,10 +148,18 @@ const estilos = StyleSheet.create({
     marginBottom: espaco.md,
     textAlign: "center",
   },
+  rodape: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginTop: espaco.lg,
+  },
   rodapeTexto: {
     color: cores.textoFraco,
     fontSize: fonte.pequena,
-    textAlign: "center",
-    marginTop: espaco.lg,
+  },
+  link: {
+    color: cores.primaria,
+    fontSize: fonte.pequena,
+    fontWeight: "600",
   },
 });
