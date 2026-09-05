@@ -33,6 +33,13 @@ export interface Endereco {
 /** Campos que o formulario de endereco manipula (sem os ids). */
 export type EnderecoFormulario = Omit<Endereco, "id_endereco" | "id_cliente">;
 
+export interface Categoria {
+  id_categoria: number;
+  nome: string;
+  descricao?: string | null;
+  ativo?: boolean;
+}
+
 export type StatusPedido =
   | "pendente"
   | "pago"
@@ -40,6 +47,35 @@ export type StatusPedido =
   | "enviado"
   | "entregue"
   | "cancelado";
+
+export interface ItemPedido {
+  id_item: number;
+  id_pedido: number;
+  id_produto: number;
+  quantidade: number;
+  preco_unitario: number;
+  produto?: Pick<Produto, "id_produto" | "nome" | "valor" | "imagem" | "estoque">;
+}
+
+export interface Pedido {
+  id_pedido: number;
+  id_cliente: number;
+  id_endereco_entrega: number;
+  data_pedido?: string | null;
+  valor?: number | null;
+  status?: StatusPedido | null;
+  metodo?: string | null;
+  data_pagamento?: string | null;
+  cliente?: Pick<Cliente, "id_cliente" | "nome" | "email" | "telefone">;
+  endereco_entrega?: Endereco;
+  itens?: ItemPedido[];
+}
+
+/** Item do carrinho local: o produto hidratado mais a quantidade escolhida. */
+export interface ItemCarrinho {
+  produto: Produto;
+  quantidade: number;
+}
 
 export interface Dashboard {
   totalPedidos: number;

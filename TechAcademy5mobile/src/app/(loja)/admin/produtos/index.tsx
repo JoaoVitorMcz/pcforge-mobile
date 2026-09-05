@@ -1,6 +1,15 @@
 import { useCallback, useMemo, useState } from "react";
-import { useFocusEffect } from "expo-router";
-import { FlatList, RefreshControl, StyleSheet, Text, TextInput, View } from "react-native";
+import { useFocusEffect, useRouter } from "expo-router";
+import {
+  FlatList,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { Botao } from "@/components/Botao";
 import { EstadoLista } from "@/components/EstadoLista";
 import { listarProdutos } from "@/services/produtos";
 import { cores, espaco, fonte, formatarPreco, raio } from "@/theme";
@@ -9,12 +18,18 @@ import type { Produto } from "@/types";
 /** Abaixo disso o produto entra em alerta de reposicao. */
 const LIMITE_ESTOQUE_BAIXO = 5;
 
-function ProdutoLinha({ produto }: { produto: Produto }) {
+function ProdutoLinha({ produto, aoAbrir }: { produto: Produto; aoAbrir: () => void }) {
   const semEstoque = produto.estoque <= 0;
   const estoqueBaixo = produto.estoque > 0 && produto.estoque < LIMITE_ESTOQUE_BAIXO;
 
   return (
-    <View style={estilos.item}>
+    <TouchableOpacity
+      accessibilityRole="button"
+      accessibilityLabel={`Editar ${produto.nome}`}
+      activeOpacity={0.75}
+      style={estilos.item}
+      onPress={aoAbrir}
+    >
       <View style={estilos.itemTopo}>
         <Text style={estilos.nome} numberOfLines={2}>
           {produto.nome}
@@ -28,15 +43,16 @@ function ProdutoLinha({ produto }: { produto: Produto }) {
           {semEstoque ? "Esgotado" : `${produto.estoque} em estoque`}
         </Text>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 
 /**
- * Consulta do catalogo para o admin. A escrita de produtos continua so na web:
- * aqui a tela le, filtra e sinaliza estoque, sem criar nem editar.
+ * Catalogo no painel: lista, filtra, sinaliza estoque e da acesso ao CRUD.
+ * Recarrega ao focar, entao voltar de uma edicao ja mostra o valor novo.
  */
 export default function ProdutosAdmin() {
+  const router = useRouter();
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [busca, setBusca] = useState("");
   const [carregando, setCarregando] = useState(true);
@@ -94,10 +110,19 @@ export default function ProdutosAdmin() {
             style={estilos.busca}
             accessibilityLabel="Buscar produto"
           />
+
+          <View style={estilos.acaoNovo}>
+            <Botao titulo="Novo produto" aoPressionar={() => router.push("/(loja)/admin/produtos/novo")} />
+          </View>
         </>
       }
       ListEmptyComponent={<EstadoLista vazio mensagemVazio="Nenhum produto encontrado." />}
-      renderItem={({ item }) => <ProdutoLinha produto={item} />}
+      renderItem={({ item }) => (
+        <ProdutoLinha
+          produto={item}
+          aoAbrir={() => router.push(`/(loja)/admin/produtos/${item.id_produto}`)}
+        />
+      )}
       refreshControl={
         <RefreshControl
           refreshing={atualizando}
@@ -131,6 +156,9 @@ const estilos = StyleSheet.create({
   resumoTexto: {
     color: cores.textoFraco,
     fontSize: fonte.pequena,
+  },
+  acaoNovo: {
+    marginBottom: espaco.md,
   },
   busca: {
     backgroundColor: cores.superficie,

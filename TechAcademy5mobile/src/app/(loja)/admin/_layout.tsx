@@ -24,7 +24,9 @@ export default function LayoutAdmin() {
       }}
     >
       <Stack.Screen name="index" options={{ title: "Dashboard" }} />
-      <Stack.Screen name="produtos" options={{ title: "Gerenciar produtos" }} />
+      {/* produtos e pedidos tem Stack proprio, com as telas de detalhe. */}
+      <Stack.Screen name="produtos" options={{ headerShown: false }} />
+      <Stack.Screen name="pedidos" options={{ headerShown: false }} />
       <Stack.Screen name="clientes" options={{ title: "Clientes" }} />
       <Stack.Screen name="configuracoes" options={{ title: "Configurações" }} />
     </Stack>
