@@ -94,8 +94,8 @@ guarda explícita que responde 401 em vez de estourar um `TypeError` e virar 500
 
 ## Sequência 2 — Criar pedido: App → API → MySQL
 
-Cobre RF-04.1 a RF-04.3. A parte que importa é a **transação**: pedido, itens e baixa de
-estoque precisam acontecer juntos ou nenhum acontece.
+Cobre RF-04.1 a RF-04.5. A parte que importa é a **transação**: pedido, itens e baixa de
+estoque acontecem juntos ou nenhum acontece.
 
 ```mermaid
 sequenceDiagram
@@ -129,7 +129,7 @@ sequenceDiagram
             Ctrl->>Prod: confere estoque item a item
 
             alt estoque insuficiente
-                Ctrl-->>App: 400 com o item e a quantidade disponível
+                Ctrl-->>App: 409 com o produto e a quantidade disponível
                 App-->>C: pede ajuste no carrinho
             else estoque suficiente
                 Ctrl->>TX: inicia transação
@@ -162,7 +162,62 @@ sequenceDiagram
 
 ### Por que a transação
 
-Sem ela, três falhas ficam possíveis: pedido criado sem itens, itens criados sem baixa de
-estoque, ou baixa de estoque sem pedido. Qualquer uma delas corrompe o histórico de um jeito
-que nenhuma tela consegue explicar depois. O `ROLLBACK` garante que o carrinho do cliente
-continue igual ao que era antes da tentativa.
+Sem ela, quatro falhas ficam possíveis: pedido criado sem itens, itens criados sem baixa de
+estoque, baixa de estoque sem pedido, ou baixa parcial quando o segundo item falha. Qualquer
+uma corrompe o histórico de um jeito que nenhuma tela consegue explicar depois. O `ROLLBACK`
+garante que o estoque e o carrinho continuem exatamente como estavam antes da tentativa.
+
+---
+
+## Sequência 3 — Admin muda o status do pedido
+
+Mostra as duas validações da máquina de estados: a do app, que decide o que oferecer, e a da
+API, que decide o que aceitar.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor A as Administrador
+    participant App as Área admin do app
+    participant Auth as authMiddleware
+    participant Role as autorização por papel
+    participant Ctrl as pedido.controller
+    participant DB as MySQL
+
+    A->>App: abre o pedido
+    App->>Auth: GET /pedidos/:id
+    Auth->>Ctrl: next()
+    Ctrl->>DB: carrega pedido, itens, cliente e endereço
+    DB-->>Ctrl: pedido detalhado
+    Ctrl-->>App: 200
+
+    App->>App: consulta a tabela de transições<br/>e monta os botões do estado atual
+    Note over App: "entregue" e "cancelado" são finais:<br/>nenhum botão é oferecido
+
+    A->>App: escolhe o novo status
+    App->>Auth: PATCH /pedidos/:id/status
+    Auth->>Role: next()
+
+    alt não é admin
+        Role-->>App: 403
+    else é admin
+        Role->>Ctrl: next()
+        Ctrl->>DB: carrega o pedido
+        Ctrl->>Ctrl: a transição atual -> destino<br/>é permitida?
+
+        alt transição inválida
+            Ctrl-->>App: 409 com as transições válidas
+            Note over App,Ctrl: só acontece se o pedido mudou<br/>por outra via desde que a tela abriu
+            App-->>A: alerta com a mensagem da API
+        else transição válida
+            Ctrl->>DB: UPDATE status<br/>(e data_pagamento, se virou "pago")
+            Ctrl-->>App: 200
+            App->>App: recarrega o pedido
+            App-->>A: novo status na tela
+        end
+    end
+```
+
+A tabela de transições existe nos dois lados de propósito: no app para **não oferecer** o que
+seria recusado, e na API porque é ela quem **decide**. A cópia no cliente é conveniência de
+interface, nunca a regra.

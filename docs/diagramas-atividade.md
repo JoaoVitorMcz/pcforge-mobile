@@ -1,7 +1,8 @@
 # Diagramas de atividade
 
-Os dois fluxos com mais ramificação no PC Forge: o checkout, onde a regra de negócio decide
-se a compra pode acontecer, e o upload de imagem, onde a validação decide se o arquivo entra.
+Os três fluxos com mais ramificação no PC Forge: o checkout, onde a regra de negócio decide
+se a compra pode acontecer; o cancelamento, que desfaz a reserva de estoque; e o upload de
+imagem, onde a validação decide se o arquivo entra.
 
 ---
 
@@ -43,7 +44,7 @@ flowchart TD
     erro401 --> fimToken([Fim])
 
     token -->|Sim| estoque{Estoque suficiente<br/>para todos os itens?}
-    estoque -->|Não| erroEstoque[Informar o item e a<br/>quantidade disponível]
+    estoque -->|Não| erroEstoque["Responder 409 com o produto<br/>e a quantidade disponível"]
     erroEstoque --> ajustar[Cliente ajusta o carrinho]
     ajustar --> total
 
@@ -51,21 +52,65 @@ flowchart TD
     transacao --> criarPedido[Criar registro em 'pedido'<br/>vinculado ao cliente e ao endereço]
     criarPedido --> criarItens[Criar 'itempedido' com<br/>preco_unitario congelado]
     criarItens --> baixa[Dar baixa no estoque<br/>de cada produto]
-    baixa --> commit[/Confirmar a transação/]
+    baixa --> deuCerto{Todas as etapas<br/>concluíram?}
+    deuCerto -->|Não| rollback[/Desfazer a transação/]
+    rollback --> semGravar["Nada gravado: sem pedido,<br/>sem itens, sem estoque descontado"]
+    semGravar --> fimRollback([Fim])
 
+    deuCerto -->|Sim| commit[/Confirmar a transação/]
     commit --> resposta[Responder 201<br/>com o pedido criado]
     resposta --> limpar[Esvaziar o carrinho]
     limpar --> exibir[Exibir confirmação<br/>e link para 'Meus pedidos']
     exibir --> fim([Fim])
 ```
 
-**Por que o preço é congelado no passo `criarItens`:** sem `preco_unitario` gravado, uma
-mudança futura no valor do produto reescreveria o total de todos os pedidos antigos. Ver
+### Duas decisões deste fluxo
+
+**O preço é congelado no passo `criarItens`.** Sem `preco_unitario` gravado, uma mudança
+futura no valor do produto reescreveria o total de todos os pedidos antigos. Ver
 [der.md](der.md).
+
+**A baixa de estoque mora dentro da transação.** Fora dela, uma falha depois do desconto
+deixaria produto reservado por um pedido que não existe. O `decrement` faz um `UPDATE`
+relativo (`estoque = estoque - N`), e não uma leitura seguida de escrita, que perderia
+atualizações se dois pedidos chegassem ao mesmo tempo.
 
 ---
 
-## Atividade 2 — Upload de imagem de produto
+## Atividade 2 — Cancelamento de pedido
+
+O caminho inverso da Atividade 1: o estoque volta.
+
+```mermaid
+flowchart TD
+    inicio([Início]) --> pedir["PATCH /pedidos/:id/cancelar"]
+    pedir --> existe{Pedido existe?}
+    existe -->|Não| r404[Responder 404]
+    r404 --> fim404([Fim])
+
+    existe -->|Sim| dono{É do próprio cliente<br/>ou é admin?}
+    dono -->|Não| r403[Responder 403]
+    r403 --> fim403([Fim])
+
+    dono -->|Sim| cancelavel{"Status permite cancelar?<br/>Não: enviado, entregue, cancelado"}
+    cancelavel -->|Não| r409[Responder 409]
+    r409 --> fim409([Fim])
+
+    cancelavel -->|Sim| tx[/Início da transação/]
+    tx --> itens[Carregar os itens do pedido]
+    itens --> devolver[Devolver ao estoque a<br/>quantidade de cada item]
+    devolver --> status[Marcar o pedido<br/>como cancelado]
+    status --> commit[/Confirmar a transação/]
+    commit --> r200[Responder 200]
+    r200 --> fim([Fim])
+```
+
+A guarda de status é o que impede devolver estoque duas vezes: um pedido já cancelado é
+recusado com **409** antes de qualquer `increment`.
+
+---
+
+## Atividade 3 — Upload de imagem de produto
 
 Cobre RF-03.1 a RF-03.4. Implementado em
 [config/upload.ts](../TechAcademy5back/src/config/upload.ts) e coberto pela suíte

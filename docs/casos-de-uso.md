@@ -58,7 +58,7 @@ flowchart LR
 |---|---|
 | **Ator principal** | Cliente autenticado |
 | **Pré-condições** | Carrinho com ao menos um item; ao menos um endereço cadastrado |
-| **Pós-condições** | Pedido criado com status inicial e itens com o preço vigente registrado |
+| **Pós-condições** | Pedido criado com status `pendente`, preço congelado e estoque debitado |
 | **Requisitos** | RF-04.1, RF-04.2, RF-04.3 |
 
 **Fluxo principal**
@@ -72,8 +72,10 @@ flowchart LR
 
 **Fluxos alternativos**
 
-- **4a. Estoque insuficiente** — o sistema identifica o item, informa a quantidade disponível
-  e mantém o carrinho para ajuste
+- **4a. Estoque insuficiente** — o sistema responde **409** nomeando o produto e a quantidade
+  disponível, e mantém o carrinho para ajuste
+- **5a. Falha no meio da transação** — nada é gravado: sem pedido, sem itens e sem estoque
+  debitado
 - **2a. Sem endereço cadastrado** — o sistema desvia para o cadastro de endereço (UC07) e
   retorna ao passo 2
 - **1a. Sessão expirada** — o token venceu; o sistema leva ao login (UC02) e retorna
@@ -122,9 +124,9 @@ flowchart LR
     painel --- Sistema
 ```
 
-> **Onde cada caso acontece.** UC22, UC23, UC24, UC25 e UC26 — tudo que **escreve** no
-> catálogo — existem só na web. O app mobile expõe ao admin UC21, UC30, UC28 e as consultas
-> somente leitura de produtos e clientes.
+> **Onde cada caso acontece.** Todos existem na web. O aplicativo cobre UC21, UC22, UC23,
+> UC24, UC25, UC27, UC28, UC29 e UC30 — ou seja, o admin também opera pelo celular, com a
+> imagem vindo da galeria do aparelho. UC26, o CRUD de categorias, segue só na web.
 
 ### Detalhamento — UC22 · Cadastrar produto
 
@@ -152,6 +154,31 @@ flowchart LR
 - **3a. Sem imagem** — o produto é criado sem foto e a vitrine exibe a imagem padrão
 - **1a. Usuário sem papel `admin`** — o `authorizeRole` responde **403** e o formulário nem
   chega a ser submetido, porque a interface já não oferece a opção
+
+### Detalhamento — UC29 · Alterar status do pedido
+
+| | |
+|---|---|
+| **Ator principal** | Administrador |
+| **Plataforma** | Aplicativo e web |
+| **Pré-condições** | Autenticado com papel `admin`; o pedido não está em estado final |
+| **Pós-condições** | Pedido no novo status; `data_pagamento` preenchida ao virar `pago` |
+| **Requisitos** | RF-04.9, RF-04.10 |
+
+**Fluxo principal**
+
+1. O administrador abre a lista de pedidos e escolhe um
+2. O sistema exibe itens, cliente, endereço e o status atual
+3. O sistema oferece **apenas as transições válidas** a partir do estado atual
+4. O administrador escolhe o novo status
+5. A API revalida a transição e grava
+6. A tela recarrega já no novo status
+
+**Fluxos alternativos**
+
+- **3a. Pedido `entregue` ou `cancelado`** — estados finais: nenhuma transição é oferecida
+- **5a. Transição inválida** — **409**; só ocorre se o pedido mudou por outra via desde que a
+  tela abriu
 
 ---
 

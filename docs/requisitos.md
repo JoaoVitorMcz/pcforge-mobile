@@ -10,6 +10,7 @@ Legenda de acesso:
 - **Autenticado** — exige `authMiddleware`
 - **Dono ou admin** — `selfOrAdminMiddleware`, que compara o `id` da URL com o do token
 - **Admin** — `authorizeRole(["admin"])`
+- **Permissão** — `authorizePermission([...])`, que decide pela ação e não pelo cargo
 
 ## Requisitos funcionais
 
@@ -24,6 +25,10 @@ Legenda de acesso:
 | RF-01.5 | O sistema deve permitir consultar e editar o próprio perfil | `GET·PUT /clientes/:id` | Dono ou admin |
 | RF-01.6 | O sistema deve permitir desativar um cliente sem apagar o histórico | `DELETE /clientes/:id` | Dono ou admin |
 | RF-01.7 | O sistema deve listar todos os clientes para o administrador | `GET /clientes` | Admin |
+| RF-01.8 | O sistema deve atribuir o papel `cliente` a todo cadastro novo | — | — |
+
+RF-01.8 existe porque, sem o vínculo em `cliente_role`, o token sairia com `permissoes` vazio
+e as rotas protegidas por permissão recusariam a compra de quem acabou de se cadastrar.
 
 O primeiro administrador nasce do [seed](../TechAcademy5back/src/scripts/seed.ts):
 `criarCliente` só aceita `admin: true` de quem já está autenticado como admin, então não há
@@ -38,6 +43,7 @@ como escalar privilégio pela API.
 | RF-02.3 | O sistema deve buscar produtos por nome | `GET /produtos/buscar` | Público |
 | RF-02.4 | O sistema deve exibir os detalhes de um produto | `GET /produtos/:id` | Público |
 | RF-02.5 | O sistema deve permitir criar, editar e desativar produtos | `POST·PUT·DELETE /produtos` | Admin |
+| RF-02.9 | O formulário de produto deve recusar preço menor ou igual a zero e estoque negativo ou fracionário | — | Admin |
 | RF-02.6 | O sistema deve listar e detalhar categorias | `GET /categorias`, `GET /categorias/:id` | Público |
 | RF-02.7 | O sistema deve permitir criar, editar e excluir categorias | `POST·PUT·DELETE /categorias` | Admin |
 | RF-02.8 | O sistema deve exibir o estoque disponível na vitrine | — | Público |
@@ -56,14 +62,23 @@ como escalar privilégio pela API.
 
 | ID | Requisito | Rota | Acesso |
 |---|---|---|---|
-| RF-04.1 | O sistema deve permitir criar um pedido a partir do carrinho | `POST /pedidos` | Autenticado |
-| RF-04.2 | O sistema deve exigir um endereço de entrega cadastrado para criar o pedido | — | Autenticado |
+| RF-04.1 | O sistema deve permitir criar um pedido a partir do carrinho | `POST /pedidos` | Permissão `pedido:criar` |
+| RF-04.2 | O sistema deve exigir um endereço de entrega **do próprio cliente** | — | Permissão |
 | RF-04.3 | O sistema deve registrar o preço unitário vigente no momento da compra | — | — |
-| RF-04.4 | O sistema deve listar os pedidos de um cliente | `GET /pedidos/cliente/:id_cliente` | Dono ou admin |
-| RF-04.5 | O sistema deve permitir ao cliente cancelar o próprio pedido | `PATCH /pedidos/:id/cancelar` | Autenticado |
-| RF-04.6 | O sistema deve listar todos os pedidos para o administrador | `GET /pedidos` | Admin |
-| RF-04.7 | O sistema deve permitir ao administrador alterar o status de um pedido | `PATCH /pedidos/:id/status` | Admin |
-| RF-04.8 | O sistema deve permitir gerenciar os itens de um pedido | `GET·POST·PATCH·DELETE /itens-pedido` | Autenticado |
+| RF-04.4 | O sistema deve recusar com **409** a compra acima do estoque, sem gravar nada | — | — |
+| RF-04.5 | O sistema deve **debitar o estoque** de cada produto ao criar o pedido | — | — |
+| RF-04.6 | O sistema deve **devolver o estoque** ao cancelar o pedido | `PATCH /pedidos/:id/cancelar` | Permissão `pedido:atualizar` |
+| RF-04.7 | O sistema deve listar os pedidos de um cliente | `GET /pedidos/cliente/:id_cliente` | Dono ou admin |
+| RF-04.8 | O sistema deve listar todos os pedidos para o administrador | `GET /pedidos` | Admin |
+| RF-04.9 | O sistema deve permitir ao administrador alterar o status de um pedido | `PATCH /pedidos/:id/status` | Admin |
+| RF-04.10 | O sistema deve aceitar apenas transições válidas de status, recusando as demais com **409** | — | Admin |
+| RF-04.11 | O sistema deve gerenciar os itens de um pedido, ajustando o estoque pela diferença | `GET·POST·PATCH·DELETE /itens-pedido` | Autenticado |
+
+As transições permitidas são `pendente → pago → em_preparacao → enviado → entregue`, com
+`cancelado` alcançável dos três primeiros. `entregue` e `cancelado` são **terminais**.
+
+A interface só oferece as transições válidas a partir do estado atual, mas a API revalida:
+a cópia da tabela no cliente é conveniência, não a regra.
 
 ### RF-05 · Endereços
 
@@ -116,6 +131,7 @@ Detalhamento em [rbac.md](rbac.md).
 | RNF-01.6 | O tráfego web deve ser servido por HTTPS | Nginx como proxy reverso ([mkcert.md](mkcert.md)) |
 | RNF-01.7 | O token deve ser guardado em armazenamento seguro no dispositivo | `expo-secure-store` no nativo; `localStorage` só na build web de demonstração |
 | RNF-01.8 | O upload não pode aceitar arquivo executável disfarçado de imagem | Validação de extensão **e** MIME, com `UploadValidationError` |
+| RNF-01.9 | O estoque deve ser debitado e devolvido dentro de transação, nunca parcialmente | `sequelize.transaction` em `pedido.service` e no cancelamento |
 
 ### RNF-02 · Confiabilidade
 

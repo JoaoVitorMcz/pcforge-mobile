@@ -65,12 +65,18 @@ A jornada de compra ganhou um **app nativo em Expo + Expo Router** (`TechAcademy
 consumindo **a mesma API**, sem backend próprio nem duplicação de regra de negócio. A divisão
 de responsabilidade entre plataformas ficou assim:
 
-| | Web | Mobile |
+| | Loja web | Aplicativo |
 |---|---|---|
-| Vitrine e compra | ✅ | ✅ |
-| Cadastro/edição de produto | ✅ | ❌ |
-| Dashboard do admin | ✅ | ✅ |
-| Consulta de produtos e clientes | ✅ | ✅ (somente leitura) |
+| Vitrine, carrinho e checkout | ✅ | ✅ |
+| Cadastro de cliente e endereços | ✅ | ✅ |
+| CRUD de produtos e upload de imagem | ✅ | ✅ (foto da galeria) |
+| Gestão de pedidos e status | ✅ | ✅ |
+| Indicadores e estoque baixo | ✅ | ✅ |
+| CRUD de categorias | ✅ | ❌ |
+
+As duas plataformas atendem as duas personas. O que justifica o app não é ter algo
+exclusivo, e sim **onde a pessoa está**: o cliente decide no ônibus, e o estoque acaba no
+depósito, não na mesa do escritório.
 
 O app descobre o endereço da API pelo host do dev server do Expo, o que permite rodar na
 máquina de qualquer integrante da dupla sem editar arquivo.
@@ -81,7 +87,15 @@ O controle de acesso deixou de ser um booleano `admin` na tabela de clientes e v
 com `role`, `permissao` e as duas tabelas de junção, mais o middleware `authorizeRole([...])`
 como função de ordem superior. Detalhes em [rbac.md](rbac.md).
 
-### Etapa 5 — o app também no navegador
+### Etapa 5 — regra de estoque e permissões granulares
+
+Uma auditoria encontrou o buraco central: o estoque era **validado e nunca debitado**, então
+um produto com uma unidade podia ser vendido infinitas vezes. A baixa entrou na transação que
+já criava pedido e itens, e o cancelamento passou a devolver. O status do pedido ganhou uma
+máquina de estados, e `authorizePermission` passou a valer nas rotas que o cliente exerce —
+o que fez as tabelas `permissao` e `role_permissao` sustentarem decisão de verdade.
+
+### Etapa 6 — o app também no navegador
 
 Com `react-native-web`, o mesmo código do app passou a rodar como página. Isso dá uma segunda
 plataforma de demonstração sem manter um segundo projeto — ao custo de a sessão precisar de
