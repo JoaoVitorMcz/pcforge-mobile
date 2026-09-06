@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { login as loginNaApi } from "@/services/clientes";
+import { aoReceber401 } from "@/services/api";
 import { lerSessao, removerSessao, salvarSessao } from "@/services/sessao";
 import type { Cliente } from "@/types";
 
@@ -76,6 +77,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setToken(null);
     setCliente(null);
   }, []);
+
+  useEffect(() => {
+    return aoReceber401(() => {
+      void sair();
+    });
+  }, [sair]);
 
   const valor = useMemo<AuthContextValue>(
     () => ({

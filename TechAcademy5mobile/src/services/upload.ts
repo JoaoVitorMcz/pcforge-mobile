@@ -1,5 +1,5 @@
 import { API_BASE_URL } from "./config";
-import { ApiError } from "./api";
+import { ApiError, notificarSessaoExpirada } from "./api";
 
 /** Extensoes que o backend aceita (config/upload.ts). */
 const EXTENSOES_PERMITIDAS = ["jpg", "jpeg", "png", "webp", "gif"];
@@ -46,6 +46,10 @@ export async function enviarImagem(token: string, uri: string): Promise<string> 
   });
 
   if (!resposta.ok) {
+    if (resposta.status === 401) {
+      notificarSessaoExpirada();
+    }
+
     let mensagem = `Erro ${resposta.status}`;
 
     try {
@@ -55,6 +59,8 @@ export async function enviarImagem(token: string, uri: string): Promise<string> 
       // 413 pode vir sem corpo JSON: a mensagem generica abaixo cobre.
       if (resposta.status === 413) {
         mensagem = "Imagem maior que 5 MB.";
+      } else if (resposta.status === 403) {
+        mensagem = "Você não tem permissão para enviar imagens.";
       }
     }
 

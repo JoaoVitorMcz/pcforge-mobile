@@ -11,6 +11,19 @@ export class ApiError extends Error {
   }
 }
 
+type SessaoExpiradaListener = () => void;
+const listenersSessaoExpirada = new Set<SessaoExpiradaListener>();
+
+/** Permite que o contexto de autenticação encerre a sessão ao receber 401. */
+export function aoReceber401(listener: SessaoExpiradaListener): () => void {
+  listenersSessaoExpirada.add(listener);
+  return () => listenersSessaoExpirada.delete(listener);
+}
+
+export function notificarSessaoExpirada(): void {
+  listenersSessaoExpirada.forEach((listener) => listener());
+}
+
 type Metodo = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
 interface Opcoes {
@@ -47,7 +60,17 @@ export async function requisitar<T>(caminho: string, opcoes: Opcoes = {}): Promi
   });
 
   if (!resposta.ok) {
-    throw new ApiError(resposta.status, await extrairMensagem(resposta));
+    if (resposta.status === 401 && token) {
+      notificarSessaoExpirada();
+    }
+
+    const mensagem = await extrairMensagem(resposta);
+    throw new ApiError(
+      resposta.status,
+      resposta.status === 403 && mensagem === "Erro 403"
+        ? "Você não tem permissão para realizar esta ação."
+        : mensagem
+    );
   }
 
   if (resposta.status === 204) {
