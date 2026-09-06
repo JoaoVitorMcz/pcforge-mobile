@@ -7,7 +7,7 @@ decisões foram tomadas assim.
 > Fase D, listados abaixo — este aqui só rastreia o andamento. Não marque aqueles itens da
 > rubrica como prontos por causa deste documento.
 
-Última atualização: fim da M2, com a auditoria do backend e a área admin ampliada no app.
+Última atualização: M3, com a validação do catálogo, imagens, suporte, CEP e segurança de sessão.
 
 ## Placar da rubrica
 
@@ -106,14 +106,13 @@ O item 2 é o mais grave: era a regra de negócio que a rubrica cobra, e não ex
 
 - [ ] Rodar em Android e em um segundo aparelho ou emulador, registrando prints
       — a build web já dá uma segunda plataforma, faltam os prints e um aparelho real
-- [ ] Tratar 401 com logout automático e 403 com mensagem clara
-      — o login já distingue 401; falta o logout automático quando **qualquer outra**
-      chamada devolver 401, e a mensagem dedicada de 403
+- [x] Tratar 401 com logout automático e 403 com mensagem clara
+      — o cliente encerra a sessão em qualquer 401 e apresenta mensagem dedicada para 403
 - [x] Tratar falha de rede sem travar a tela — login trata `TypeError` de conexão e as
       listas usam `EstadoLista` com "Tentar novamente"
-- [ ] Conferir que o token nunca aparece em log
-- [ ] **Evidências do controle de acesso**: a mesma navegação vista por um admin e por um
-      cliente, mostrando que a aba Admin só aparece para um
+- [x] Conferir que o token nunca aparece em log
+- [ ] **Evidências do controle de acesso**: registrar a mesma navegação vista por um admin e por
+      um cliente, mostrando que a aba Admin só aparece para o administrador
 
 ### D — documentação de Engenharia · concluída
 
