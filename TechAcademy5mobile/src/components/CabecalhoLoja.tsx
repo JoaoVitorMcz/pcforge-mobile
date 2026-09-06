@@ -1,4 +1,5 @@
 import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCarrinho } from "@/contexts/CarrinhoContext";
@@ -27,7 +28,7 @@ export function AcoesCabecalho() {
         style={estilos.usuario}
         onPress={() => router.push("/(loja)/perfil")}
       >
-        <Text style={estilos.icone}>☺</Text>
+        <Ionicons name="person-circle-outline" size={22} color={cores.primaria} />
         <Text style={estilos.saudacao} numberOfLines={1}>
           Olá, {primeiroNome}
         </Text>
@@ -39,7 +40,7 @@ export function AcoesCabecalho() {
         style={estilos.carrinho}
         onPress={() => router.push("/(loja)/carrinho")}
       >
-        <Text style={estilos.icone}>◫</Text>
+        <Ionicons name="cart-outline" size={22} color={cores.primaria} />
         {quantidadeTotal > 0 && (
           <View style={estilos.badge}>
             <Text style={estilos.badgeTexto}>{quantidadeTotal}</Text>
@@ -79,11 +80,6 @@ const estilos = StyleSheet.create({
     alignItems: "center",
     maxWidth: 130,
     gap: 4,
-  },
-  icone: {
-    color: cores.primaria,
-    fontSize: 19,
-    fontWeight: "700",
   },
   saudacao: {
     color: cores.texto,
