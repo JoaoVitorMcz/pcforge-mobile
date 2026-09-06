@@ -37,6 +37,7 @@ services:
       MERCADO_PAGO_ACCESS_TOKEN: ${MERCADO_PAGO_ACCESS_TOKEN}
       FRONTEND_URL: ${FRONTEND_URL}
       CORS_ORIGINS: ${CORS_ORIGINS}
+      LEGACY_IMAGES_DIR: /app/catalogo-imagens
     # Publica a API na rede local para o desenvolvimento do app mobile: o
     # celular nao resolve pcforge.local nem confia no certificado autoassinado
     # do Nginx. Acesso via http://<IP-da-maquina>:3000, sem TLS.
@@ -49,6 +50,7 @@ services:
       - app-network
     volumes:
       - ./TechAcademy5back/uploads:/app/uploads
+      - ./TechAcademy5front/public/imagens/produtos:/app/catalogo-imagens:ro
 
   frontend:
     build:

@@ -2,6 +2,7 @@ import "dotenv/config";
 import express, { Request, Response, NextFunction } from "express";
 import cors from "cors";
 import multer from "multer";
+import path from "path";
 import sequelize from "./config/database/index";
 // Registra as quatro tabelas do RBAC e as duas relacoes N:N no sequelize.sync().
 // Sem este import, o include de roles no login nao encontra a associacao.
@@ -38,6 +39,13 @@ app.use(cors({ origin: allowedOrigins.length > 0 ? allowedOrigins : true }));
 
 app.use(express.json());
 app.use("/uploads", express.static(uploadDir));
+app.use(
+  "/imagens/produtos",
+  express.static(
+    process.env.LEGACY_IMAGES_DIR ??
+      path.resolve(process.cwd(), "../TechAcademy5front/public/imagens/produtos")
+  )
+);
 
 // Rotas
 app.use("/clientes", clienteRoutes);
