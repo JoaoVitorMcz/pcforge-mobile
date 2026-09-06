@@ -1,5 +1,6 @@
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useCarrinho } from "@/contexts/CarrinhoContext";
+import { urlDaImagem } from "@/services/imagens";
 import { cores, espaco, fonte, formatarPreco, raio } from "@/theme";
 import type { Produto } from "@/types";
 
@@ -18,6 +19,19 @@ export function ProdutoCard({ produto }: { produto: Produto }) {
 
   return (
     <View style={estilos.card}>
+      {urlDaImagem(produto.imagem) ? (
+        <View style={estilos.molduraImagem}>
+          <Image
+            source={{ uri: urlDaImagem(produto.imagem) ?? undefined }}
+            style={estilos.imagem}
+            resizeMode="contain"
+          />
+        </View>
+      ) : (
+        <View style={[estilos.molduraImagem, estilos.imagemVazia]}>
+          <Text style={estilos.imagemTexto}>PC Forge</Text>
+        </View>
+      )}
       <View style={estilos.cabecalho}>
         <Text style={estilos.nome} numberOfLines={2}>
           {produto.nome}
@@ -74,6 +88,30 @@ const estilos = StyleSheet.create({
     borderColor: cores.borda,
     padding: espaco.md,
     marginBottom: espaco.md,
+  },
+  molduraImagem: {
+    width: "100%",
+    height: 180,
+    marginBottom: espaco.md,
+    borderRadius: raio.md,
+    borderWidth: 1,
+    borderColor: cores.borda,
+    backgroundColor: cores.fundo,
+    overflow: "hidden",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  imagem: {
+    width: "100%",
+    height: "100%",
+  },
+  imagemVazia: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  imagemTexto: {
+    color: cores.textoFraco,
+    fontSize: fonte.pequena,
   },
   cabecalho: {
     flexDirection: "row",

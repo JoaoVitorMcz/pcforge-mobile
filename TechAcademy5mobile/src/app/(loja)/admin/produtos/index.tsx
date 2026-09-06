@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from "react";
 import { useFocusEffect, useRouter } from "expo-router";
 import {
   FlatList,
+  Image,
   RefreshControl,
   StyleSheet,
   Text,
@@ -12,6 +13,7 @@ import {
 import { Botao } from "@/components/Botao";
 import { EstadoLista } from "@/components/EstadoLista";
 import { listarProdutos } from "@/services/produtos";
+import { urlDaImagem } from "@/services/imagens";
 import { cores, espaco, fonte, formatarPreco, raio } from "@/theme";
 import type { Produto } from "@/types";
 
@@ -30,6 +32,15 @@ function ProdutoLinha({ produto, aoAbrir }: { produto: Produto; aoAbrir: () => v
       style={estilos.item}
       onPress={aoAbrir}
     >
+      {urlDaImagem(produto.imagem) ? (
+        <View style={estilos.molduraImagem}>
+          <Image
+            source={{ uri: urlDaImagem(produto.imagem) ?? undefined }}
+            style={estilos.imagem}
+            resizeMode="contain"
+          />
+        </View>
+      ) : null}
       <View style={estilos.itemTopo}>
         <Text style={estilos.nome} numberOfLines={2}>
           {produto.nome}
@@ -178,6 +189,22 @@ const estilos = StyleSheet.create({
     borderRadius: raio.md,
     padding: espaco.md,
     marginBottom: espaco.sm,
+  },
+  molduraImagem: {
+    width: 72,
+    height: 72,
+    marginBottom: espaco.sm,
+    borderRadius: raio.md,
+    borderWidth: 1,
+    borderColor: cores.borda,
+    backgroundColor: cores.fundo,
+    overflow: "hidden",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  imagem: {
+    width: "100%",
+    height: "100%",
   },
   itemTopo: {
     flexDirection: "row",

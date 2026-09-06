@@ -1,7 +1,7 @@
 import { useState } from "react";
 import * as ImagePicker from "expo-image-picker";
 import { ActivityIndicator, Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { API_BASE_URL } from "@/services/config";
+import { urlDaImagem } from "@/services/imagens";
 import { enviarImagem } from "@/services/upload";
 import { cores, espaco, fonte, raio } from "@/theme";
 
@@ -11,19 +11,6 @@ interface Props {
   token: string | null;
   aoEnviar: (url: string) => void;
   aoRemover: () => void;
-}
-
-/**
- * Monta a URL de exibicao a partir do que esta gravado no produto.
- *
- * O campo carrega dois formatos historicos: o upload devolve "/uploads/nome",
- * enquanto o catalogo herdado da web guarda so o nome do arquivo, servido pelo
- * front. So o primeiro caso a API consegue servir.
- */
-function urlDaImagem(imagem: string): string | null {
-  if (imagem.startsWith("http://") || imagem.startsWith("https://")) return imagem;
-  if (imagem.startsWith("/uploads/")) return `${API_BASE_URL}${imagem}`;
-  return null;
 }
 
 /**
@@ -65,7 +52,7 @@ export function SeletorImagem({ imagem, token, aoEnviar, aoRemover }: Props) {
     }
   };
 
-  const previa = imagem ? urlDaImagem(imagem) : null;
+  const previa = urlDaImagem(imagem);
 
   return (
     <View style={estilos.bloco}>
