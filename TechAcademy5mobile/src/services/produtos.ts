@@ -15,6 +15,12 @@ export async function listarProdutos(pagina?: number): Promise<Produto[]> {
   return lista.map((produto) => ({ ...produto, valor: Number(produto.valor) }));
 }
 
+export async function listarProdutosDestaque(): Promise<Produto[]> {
+  const resposta = await requisitar<Produto[] | Paginado<Produto>>("/produtos/destaque");
+  const lista = Array.isArray(resposta) ? resposta : resposta.dados;
+  return lista.map((produto) => ({ ...produto, valor: Number(produto.valor) }));
+}
+
 /** Busca um produto pelo id, para a tela de edicao. */
 export async function buscarProduto(id: number): Promise<Produto> {
   const produto = await requisitar<Produto>(`/produtos/${id}`);
