@@ -5,6 +5,7 @@ import { Botao } from "@/components/Botao";
 import { CampoTexto } from "@/components/CampoTexto";
 import { useAuth } from "@/contexts/AuthContext";
 import { atualizarEndereco, criarEndereco, listarEnderecos } from "@/services/enderecos";
+import { buscarCep } from "@/services/cep";
 import { formatarCep } from "@/validacao";
 import { cores, espaco, fonte } from "@/theme";
 import type { EnderecoFormulario } from "@/types";
@@ -38,6 +39,8 @@ export default function FormularioEndereco() {
   const [erroGeral, setErroGeral] = useState<string | null>(null);
   const [carregando, setCarregando] = useState(editando);
   const [salvando, setSalvando] = useState(false);
+  const [consultandoCep, setConsultandoCep] = useState(false);
+  const [statusCep, setStatusCep] = useState<string | null>(null);
 
   useEffect(() => {
     navigation.setOptions({ title: editando ? "Editar endereço" : "Novo endereço" });
@@ -76,7 +79,47 @@ export default function FormularioEndereco() {
 
   const alterar = useCallback((campo: Campo, valor: string) => {
     setForm((atual) => ({ ...atual, [campo]: valor }));
+    if (campo === "cep") {
+      setStatusCep(null);
+      if (valor.replace(/\D/g, "").length !== 8) setConsultandoCep(false);
+    }
   }, []);
+
+  useEffect(() => {
+    const cep = (form.cep ?? "").replace(/\D/g, "");
+    if (cep.length !== 8) return;
+
+    const controller = new AbortController();
+    let ativo = true;
+
+    const consultar = async () => {
+      try {
+        setConsultandoCep(true);
+        setStatusCep("Buscando dados do CEP...");
+        const dados = await buscarCep(cep, controller.signal);
+        if (!ativo) return;
+
+        setForm((atual) => ({
+          ...atual,
+          bairro: dados.bairro || atual.bairro,
+          cidade: dados.cidade || atual.cidade,
+          estado: dados.estado || atual.estado,
+        }));
+        setStatusCep("Endereço preenchido automaticamente pelo CEP.");
+      } catch (erro) {
+        if (!ativo || (erro instanceof Error && erro.name === "AbortError")) return;
+        setStatusCep(erro instanceof Error ? erro.message : "Não foi possível buscar o CEP.");
+      } finally {
+        if (ativo) setConsultandoCep(false);
+      }
+    };
+
+    void consultar();
+    return () => {
+      ativo = false;
+      controller.abort();
+    };
+  }, [form.cep]);
 
   /**
    * O banco aceita todos os campos nulos, mas um endereco de entrega sem
@@ -133,6 +176,7 @@ export default function FormularioEndereco() {
           placeholder="00000-000"
           erro={erros.cep}
         />
+        {!!statusCep && <Text style={consultandoCep ? estilos.consultandoCep : estilos.statusCep}>{statusCep}</Text>}
         <CampoTexto
           rotulo="Cidade"
           value={form.cidade ?? ""}
@@ -191,5 +235,15 @@ const estilos = StyleSheet.create({
     fontSize: fonte.pequena,
     marginBottom: espaco.md,
     textAlign: "center",
+  },
+  consultandoCep: {
+    color: cores.textoFraco,
+    fontSize: fonte.pequena,
+    marginBottom: espaco.sm,
+  },
+  statusCep: {
+    color: cores.sucesso,
+    fontSize: fonte.pequena,
+    marginBottom: espaco.sm,
   },
 });
