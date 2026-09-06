@@ -1,23 +1,23 @@
-#!/bin/sh
-. "$(dirname "$0")/_/husky.sh"
+#!/usr/bin/env node
 
-echo "🔍 Pre-push: executando testes do backend..."
-cd TechAcademy5back || exit 1
-npm test
-RET=$?
-if [ $RET -ne 0 ]; then
-  echo "❌ Testes do backend falharam. Push bloqueado."
-  exit $RET
-fi
+const { execFileSync } = require("node:child_process");
+const path = require("node:path");
 
-echo "🔍 Pre-push: executando testes E2E do frontend..."
-cd ../TechAcademy5front || exit 1
-npm run test:e2e
-RET=$?
-if [ $RET -ne 0 ]; then
-  echo "❌ Testes E2E do frontend falharam. Push bloqueado."
-  exit $RET
-fi
+const raiz = path.resolve(__dirname, "..");
 
-echo "✅ Pre-push concluído com sucesso. Push liberado."
-exit 0
+function executar(pasta, comando, argumentos) {
+  console.log(`🔍 Pre-push: executando ${comando}...`);
+  execFileSync(process.platform === "win32" ? `${comando}.cmd` : comando, argumentos, {
+    cwd: path.join(raiz, pasta),
+    stdio: "inherit",
+  });
+}
+
+try {
+  executar("TechAcademy5back", "npm", ["test"]);
+  executar("TechAcademy5front", "npm", ["run", "test:e2e"]);
+  console.log("✅ Pre-push concluído com sucesso. Push liberado.");
+} catch (erro) {
+  console.error("❌ Validação do pre-push falhou. Push bloqueado.");
+  process.exit(erro.status ?? 1);
+}
