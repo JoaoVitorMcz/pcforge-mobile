@@ -4,12 +4,18 @@ const { execFileSync } = require("node:child_process");
 const path = require("node:path");
 
 const raiz = path.resolve(__dirname, "..");
+const npmCli = path.join(path.dirname(process.execPath), "node_modules", "npm", "bin", "npm-cli.js");
 
 function executar(pasta, comando, argumentos) {
   console.log(`🔍 Pre-push: executando ${comando}...`);
-  execFileSync(process.platform === "win32" ? `${comando}.cmd` : comando, argumentos, {
+  if (comando !== "npm") {
+    throw new Error(`Comando não suportado pelo pre-push: ${comando}`);
+  }
+
+  execFileSync(process.execPath, [npmCli, ...argumentos], {
     cwd: path.join(raiz, pasta),
     stdio: "inherit",
+    windowsHide: false,
   });
 }
 
@@ -18,6 +24,7 @@ try {
   executar("TechAcademy5front", "npm", ["run", "test:e2e"]);
   console.log("✅ Pre-push concluído com sucesso. Push liberado.");
 } catch (erro) {
+  console.error(erro.message);
   console.error("❌ Validação do pre-push falhou. Push bloqueado.");
   process.exit(erro.status ?? 1);
 }
