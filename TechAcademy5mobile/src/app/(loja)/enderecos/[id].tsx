@@ -39,8 +39,12 @@ export default function FormularioEndereco() {
   const [erroGeral, setErroGeral] = useState<string | null>(null);
   const [carregando, setCarregando] = useState(editando);
   const [salvando, setSalvando] = useState(false);
-  const [consultandoCep, setConsultandoCep] = useState(false);
-  const [statusCep, setStatusCep] = useState<string | null>(null);
+  // Guarda o tipo junto com o texto: escolher o estilo por "esta
+  // consultando" fazia "CEP nao encontrado" aparecer em verde, como se
+  // fosse confirmacao.
+  const [statusCep, setStatusCep] = useState<
+    { tipo: "carregando" | "sucesso" | "erro"; texto: string } | null
+  >(null);
 
   useEffect(() => {
     navigation.setOptions({ title: editando ? "Editar endereço" : "Novo endereço" });
@@ -81,7 +85,6 @@ export default function FormularioEndereco() {
     setForm((atual) => ({ ...atual, [campo]: valor }));
     if (campo === "cep") {
       setStatusCep(null);
-      if (valor.replace(/\D/g, "").length !== 8) setConsultandoCep(false);
     }
   }, []);
 
@@ -94,8 +97,7 @@ export default function FormularioEndereco() {
 
     const consultar = async () => {
       try {
-        setConsultandoCep(true);
-        setStatusCep("Buscando dados do CEP...");
+        setStatusCep({ tipo: "carregando", texto: "Buscando dados do CEP..." });
         const dados = await buscarCep(cep, controller.signal);
         if (!ativo) return;
 
@@ -105,12 +107,13 @@ export default function FormularioEndereco() {
           cidade: dados.cidade || atual.cidade,
           estado: dados.estado || atual.estado,
         }));
-        setStatusCep("Endereço preenchido automaticamente pelo CEP.");
+        setStatusCep({ tipo: "sucesso", texto: "Endereço preenchido automaticamente pelo CEP." });
       } catch (erro) {
         if (!ativo || (erro instanceof Error && erro.name === "AbortError")) return;
-        setStatusCep(erro instanceof Error ? erro.message : "Não foi possível buscar o CEP.");
-      } finally {
-        if (ativo) setConsultandoCep(false);
+        setStatusCep({
+          tipo: "erro",
+          texto: erro instanceof Error ? erro.message : "Não foi possível buscar o CEP.",
+        });
       }
     };
 
@@ -176,7 +179,19 @@ export default function FormularioEndereco() {
           placeholder="00000-000"
           erro={erros.cep}
         />
-        {!!statusCep && <Text style={consultandoCep ? estilos.consultandoCep : estilos.statusCep}>{statusCep}</Text>}
+        {!!statusCep && (
+          <Text
+            style={
+              statusCep.tipo === "erro"
+                ? estilos.erroCep
+                : statusCep.tipo === "sucesso"
+                  ? estilos.statusCep
+                  : estilos.consultandoCep
+            }
+          >
+            {statusCep.texto}
+          </Text>
+        )}
         <CampoTexto
           rotulo="Cidade"
           value={form.cidade ?? ""}
@@ -243,6 +258,11 @@ const estilos = StyleSheet.create({
   },
   statusCep: {
     color: cores.sucesso,
+    fontSize: fonte.pequena,
+    marginBottom: espaco.sm,
+  },
+  erroCep: {
+    color: cores.perigo,
     fontSize: fonte.pequena,
     marginBottom: espaco.sm,
   },

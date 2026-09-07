@@ -63,6 +63,9 @@ services:
       - HOST=0.0.0.0
       - DANGEROUSLY_DISABLE_HOST_CHECK=true
       - REACT_APP_API_URL=
+      - REACT_APP_EMAILJS_SERVICE_ID=${REACT_APP_EMAILJS_SERVICE_ID}
+      - REACT_APP_EMAILJS_TEMPLATE_ID=${REACT_APP_EMAILJS_TEMPLATE_ID}
+      - REACT_APP_EMAILJS_PUBLIC_KEY=${REACT_APP_EMAILJS_PUBLIC_KEY}
     volumes:
       - ./TechAcademy5front/public/imagens:/app/public/imagens:ro
     depends_on:
