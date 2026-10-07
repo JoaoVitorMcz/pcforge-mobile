@@ -20,7 +20,7 @@ decisões foram tomadas assim.
 | Mobile | Componentização e boas práticas (clean code) | 1,0 | ✅ |
 | Mobile | CRUD completo: aplicativo × API × banco | 1,0 | ✅ |
 | Mobile | Regra de negócio respeitada entre funcionalidades | 0,5 | ✅ |
-| Mobile | Usabilidade, compatibilidade entre dispositivos e segurança | 1,0 | ❌ |
+| Mobile | Usabilidade, compatibilidade entre dispositivos e segurança | 1,0 | 🔶 |
 | Engenharia | Contextualização e evolução do produto | 1,0 | ✅ |
 | Engenharia | Diagrama entidade-relacionamento | 0,5 | ✅ |
 | Engenharia | Requisitos funcionais e não funcionais | 1,0 | ✅ |
@@ -28,11 +28,15 @@ decisões foram tomadas assim.
 | Engenharia | 2 diagramas de atividade | 0,5 | ✅ |
 | Engenharia | 2 diagramas de sequência | 0,5 | ✅ |
 
-**Total: 11,0 / 12,0**
+**Total: 11,5 / 12,0**
 
-O único item em aberto é **usabilidade, compatibilidade e segurança (1,0)**, da Fase M3:
-falta rodar num aparelho real e registrar as evidências. O tratamento de 401 e 403 já foi
-feito.
+O placar item a item, com a evidência de cada nota, está em
+[avaliacao-rubrica.md](avaliacao-rubrica.md).
+
+O único item em aberto é **usabilidade, compatibilidade e segurança (1,0)**, e hoje ele está
+pela metade, não zerado: o tratamento de 401 e 403 já existia, e a revisão de setembro fechou
+a suíte de testes do app, o passo de teste no CI e a declaração do `expo-image-picker`. O que
+falta é só evidência: rodar num aparelho real e registrar os prints.
 
 O que fechou na M2:
 
@@ -133,6 +137,7 @@ O defeito 1 é o mais grave: derrubava o **CRUD completo (1,0)** para apenas *cr
 
 Único item de rubrica em aberto. É a fase que falta:
 
+- [x] Suíte de testes do app: 29 testes em 3 suítes, rodando no CI
 - [ ] Rodar em Android e em um segundo aparelho ou emulador, registrando prints
       — a build web já dá uma segunda plataforma, faltam os prints e um aparelho real
 - [x] Tratar 401 com logout automático e 403 com mensagem clara
