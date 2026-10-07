@@ -14,6 +14,7 @@ export const criarCategoria = async (req: Request, res: Response) => {
 
     return res.status(201).json(categoria);
   } catch (error) {
+    console.error("Erro ao criar categoria:", error);
     return res.status(500).json({ erro: "Erro ao criar categoria" });
   }
 };
@@ -39,6 +40,7 @@ export const listarCategorias = async (_req: Request, res: Response) => {
     const { rows: categorias, count } = await Categoria.findAndCountAll(queryOptions);
     return res.json(shouldPaginate ? buildPaginatedResponse(categorias, count, page, limit) : categorias);
   } catch (error) {
+    console.error("Erro ao listar categorias:", error);
     return res.status(500).json({ erro: "Erro ao listar categorias" });
   }
 };
@@ -55,6 +57,7 @@ export const buscarCategoria = async (req: Request, res: Response) => {
 
     return res.json(categoria);
   } catch (error) {
+    console.error("Erro ao buscar categoria:", error);
     return res.status(500).json({ erro: "Erro ao buscar categoria" });
   }
 };
@@ -73,6 +76,7 @@ export const atualizarCategoria = async (req: Request, res: Response) => {
 
     return res.json(categoria);
   } catch (error) {
+    console.error("Erro ao atualizar categoria:", error);
     return res.status(500).json({ erro: "Erro ao atualizar categoria" });
   }
 };
@@ -91,6 +95,7 @@ export const deletarCategoria = async (req: Request, res: Response) => {
 
     return res.json({ mensagem: "Categoria deletada com sucesso" });
   } catch (error) {
+    console.error("Erro ao deletar categoria:", error);
     return res.status(500).json({ erro: "Erro ao deletar categoria" });
   }
 };
