@@ -99,16 +99,14 @@ export const authorizePermission =
       return;
     }
 
-    // Token emitido antes desta rota exigir permissao nao carrega a claim.
-    // Ausente (undefined) significa "token legado": cai no papel, como
-    // extrairRoles ja faz com o boolean. Lista vazia e diferente — quer dizer
-    // que o token e novo e o usuario realmente nao tem permissao alguma.
-    if (req.cliente.permissoes === undefined) {
-      next();
-      return;
-    }
-
-    const permissoesDoCliente = req.cliente.permissoes;
+    // Token sem a claim e tratado como token sem permissao alguma, e nao como
+    // token confiavel. Houve uma janela em que o inverso fazia sentido: tokens
+    // emitidos antes do RBAC nao carregavam a lista, e recusa-los deslogaria
+    // quem estava no meio de uma compra. Essa janela fechou — o token vale um
+    // dia (cliente.controller.ts) e o login sempre preenche permissoes —, e
+    // deixar passar seria a unica regra de autorizacao do projeto que erra
+    // para o lado permissivo.
+    const permissoesDoCliente = req.cliente.permissoes ?? [];
 
     if (!permissoesExigidas.every((permissao) => permissoesDoCliente.includes(permissao))) {
       res.status(403).json({ mensagem: "Permissoes insuficientes para acessar este recurso." });

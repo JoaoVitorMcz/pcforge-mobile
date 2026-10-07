@@ -253,7 +253,27 @@ describe("RBAC - autorizacao dinamica por papel e permissao", () => {
       expect(mockNext).toHaveBeenCalled();
     });
 
-    it("16. Sem autenticacao responde 401", () => {
+    it("16. Token sem a claim de permissoes leva 403, nao passa direto", () => {
+      // Fail-open fechado: antes, permissoes ausente caia em next() para nao
+      // deslogar token emitido pre-RBAC. Como o token vale 1 dia e o login
+      // sempre preenche a lista, ausencia hoje so pode ser token forjado ou
+      // adulterado.
+      const req = mockRequest() as Request;
+      req.cliente = {
+        id_cliente: 2,
+        email: "cliente@test.com",
+        admin: false,
+        roles: ["cliente"],
+      };
+      const res = mockResponse() as Response;
+
+      authorizePermission(["pedido:criar"])(req, res, mockNext);
+
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(mockNext).not.toHaveBeenCalled();
+    });
+
+    it("17. Sem autenticacao responde 401", () => {
       const req = mockRequest() as Request;
       const res = mockResponse() as Response;
 
