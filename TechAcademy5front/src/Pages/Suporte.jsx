@@ -2,6 +2,14 @@ import { useRef, useState } from "react";
 import emailjs from "emailjs-com";
 import "./Suporte.css";
 
+// Credenciais do EmailJS vem do ambiente, nunca do codigo: elas ficaram
+// commitadas desde a base herdada do projeto, e chave commitada e chave
+// vazada. O app mobile le as mesmas credenciais de EXPO_PUBLIC_EMAILJS_*.
+const SERVICE_ID = process.env.REACT_APP_EMAILJS_SERVICE_ID;
+const TEMPLATE_ID = process.env.REACT_APP_EMAILJS_TEMPLATE_ID;
+const PUBLIC_KEY = process.env.REACT_APP_EMAILJS_PUBLIC_KEY;
+const CONFIGURADO = Boolean(SERVICE_ID && TEMPLATE_ID && PUBLIC_KEY);
+
 const TAGS = [
   "Dúvida sobre produto",
   "Problema com pedido",
@@ -18,15 +26,16 @@ const Suporte = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+
+    if (!CONFIGURADO) {
+      setStatus("erro");
+      return;
+    }
+
     setStatus("enviando");
 
     emailjs
-      .sendForm(
-        "service_qsrb1yg",      
-        "template_ptttpck",      
-        formRef.current,
-        "Jeki9fnqeSMjQdvgA"      
-      )
+      .sendForm(SERVICE_ID, TEMPLATE_ID, formRef.current, PUBLIC_KEY)
       .then(
         () => {
           setStatus("sucesso");

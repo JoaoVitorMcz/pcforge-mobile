@@ -33,11 +33,24 @@ export default function Perfil() {
         <Linha rotulo="Perfil" valor={isAdmin ? "Administrador" : "Cliente"} />
       </View>
 
+      {/*
+        Pedidos e enderecos ficam fora da barra de abas, entao o perfil e o
+        caminho para os dois. Sem o link de enderecos o cliente so conseguiria
+        criar um, pelo carrinho, e nunca listar, editar ou excluir.
+      */}
       <View style={estilos.acao}>
         <Botao
           titulo="Meus pedidos"
           variante="secundaria"
           aoPressionar={() => router.push("/(loja)/pedidos")}
+        />
+      </View>
+
+      <View style={estilos.acao}>
+        <Botao
+          titulo="Meus endereços"
+          variante="secundaria"
+          aoPressionar={() => router.push("/(loja)/enderecos")}
         />
       </View>
 

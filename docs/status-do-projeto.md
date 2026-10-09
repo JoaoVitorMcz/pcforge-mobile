@@ -7,7 +7,7 @@ decisões foram tomadas assim.
 > Fase D, listados abaixo — este aqui só rastreia o andamento. Não marque aqueles itens da
 > rubrica como prontos por causa deste documento.
 
-Última atualização: M3, com a validação do catálogo, imagens, suporte, CEP e segurança de sessão.
+Última atualização: catálogo, imagens, suporte, CEP e sessão expirada, com a revisão desse trabalho.
 
 ## Placar da rubrica
 
@@ -20,7 +20,7 @@ decisões foram tomadas assim.
 | Mobile | Componentização e boas práticas (clean code) | 1,0 | ✅ |
 | Mobile | CRUD completo: aplicativo × API × banco | 1,0 | ✅ |
 | Mobile | Regra de negócio respeitada entre funcionalidades | 0,5 | ✅ |
-| Mobile | Usabilidade, compatibilidade entre dispositivos e segurança | 1,0 | ❌ |
+| Mobile | Usabilidade, compatibilidade entre dispositivos e segurança | 1,0 | 🔶 |
 | Engenharia | Contextualização e evolução do produto | 1,0 | ✅ |
 | Engenharia | Diagrama entidade-relacionamento | 0,5 | ✅ |
 | Engenharia | Requisitos funcionais e não funcionais | 1,0 | ✅ |
@@ -28,10 +28,15 @@ decisões foram tomadas assim.
 | Engenharia | 2 diagramas de atividade | 0,5 | ✅ |
 | Engenharia | 2 diagramas de sequência | 0,5 | ✅ |
 
-**Total: 11,0 / 12,0**
+**Total: 11,5 / 12,0**
 
-O único item em aberto é **usabilidade, compatibilidade e segurança (1,0)**, da Fase M3:
-falta rodar num aparelho real, registrar as evidências e tratar 401 fora do login.
+O placar item a item, com a evidência de cada nota, está em
+[avaliacao-rubrica.md](avaliacao-rubrica.md).
+
+O único item em aberto é **usabilidade, compatibilidade e segurança (1,0)**, e hoje ele está
+pela metade, não zerado: o tratamento de 401 e 403 já existia, e a revisão de setembro fechou
+a suíte de testes do app, o passo de teste no CI e a declaração do `expo-image-picker`. O que
+falta é só evidência: rodar num aparelho real e registrar os prints.
 
 O que fechou na M2:
 
@@ -100,10 +105,39 @@ gestão de pedidos com máquina de estados.
 | 9 | `models/index.js` e `config/config.js`, scaffolding do sequelize-cli | Removidos |
 
 O item 2 é o mais grave: era a regra de negócio que a rubrica cobra, e não existia.
+### M2.5 — catálogo, suporte e sessão · concluída
+
+Trabalho do Henrique, 11 commits sobre a M2:
+
+- Imagens legadas servidas pela API em `/imagens/produtos`, com `LEGACY_IMAGES_DIR` no
+  compose e `services/imagens.ts` unificando os três formatos de caminho
+- Seed ampliado para 11 categorias e 35 produtos, 30 deles com foto
+- Navegação com ícones vetoriais e cabeçalho da loja com marca, perfil e carrinho
+- Abas reorganizadas: Home (destaques), Peças, Periféricos, Suporte e Admin
+- Tela de suporte com formulário
+- Preenchimento automático de bairro, cidade e estado pelo CEP, via ViaCEP
+- **Sessão expirada**: qualquer 401 encerra a sessão, e o 403 ganhou mensagem própria
+- `pre-push` reescrito em Node para funcionar no Windows
+
+**Revisão desse trabalho.** Quatro defeitos encontrados e corrigidos:
+
+| # | Problema | Correção |
+|---|---|---|
+| 1 | **A lista de endereços ficou inalcançável** — a aba virou `href: null` e nenhum link apontava para ela, então o app só criava endereço e nunca listava, editava ou excluía | Botão "Meus endereços" no perfil, ao lado de "Meus pedidos" |
+| 2 | **Credenciais do EmailJS no código-fonte**, em repositório público | Movidas para `EXPO_PUBLIC_EMAILJS_*`, com `.env.example`; `.env` passou a ser ignorado pelo Git |
+| 3 | `emailjs-com` **deprecado** desde 2022 e voltado para navegador | Substituído por `fetch` na API REST do EmailJS: uma dependência a menos e funciona igual no nativo |
+| 4 | **Erro do CEP renderizava em verde**, como se fosse confirmação | O status passou a carregar o tipo, e a cor sai dele |
+
+O defeito 1 é o mais grave: derrubava o **CRUD completo (1,0)** para apenas *criar*.
+
+> A chave do EmailJS que estava no código continua no histórico do Git. **Precisa ser
+> trocada no painel da conta** — remover do código não invalida a que já vazou.
+
 ### M3 — validação e evidências
 
 Único item de rubrica em aberto. É a fase que falta:
 
+- [x] Suíte de testes do app: 29 testes em 3 suítes, rodando no CI
 - [ ] Rodar em Android e em um segundo aparelho ou emulador, registrando prints
       — a build web já dá uma segunda plataforma, faltam os prints e um aparelho real
 - [x] Tratar 401 com logout automático e 403 com mensagem clara
@@ -169,9 +203,16 @@ Se o professor exigir imagem, `mmdc` exporta para PNG sem retrabalho.
 
 ## Pendências abertas
 
-- **Bloco de E2E em `.husky/pre-push` (linhas 13-20).** Remover: o E2E roda no CI, então
-  não se perde cobertura, e o hook trava o push enquanto espera o dev server do CRA
-  subir.
+- **O E2E continua no `.husky/pre-push`.** O hook foi reescrito em Node para funcionar no
+  Windows, mas segue rodando o Playwright antes de cada push. Remover: o E2E já roda no CI,
+  então não se perde cobertura, e o hook trava o push esperando o dev server do CRA subir.
+- **Três dos oito destaques não têm imagem.** A aba Home é a primeira tela do app e mostra
+  `Ryzen 5 5600`, `GeForce RTX 4060` e `RTX 4070 Super` sem foto. Existem produtos quase
+  iguais **com** foto no seed (`AMD Ryzen 5 5600X`, `RTX 3060`), então dá para consolidar
+  ou marcar como destaque os que têm imagem.
+- **A tela de suporte nunca foi testada num aparelho.** O EmailJS bloqueia por padrão
+  chamadas de aplicações que não são navegador; a opção precisa ser habilitada no painel da
+  conta. O serviço já devolve mensagem específica para esse 403.
 - **Os PRs vão para a `main` por engano.** O GitHub sugere `main` como base porque é o branch
   padrão do repositório, e foi para lá que uma leva inteira foi. A `dev` já foi alinhada por
   fast-forward, mas **é preciso trocar a base para `dev` a cada PR** — ou mudar o branch

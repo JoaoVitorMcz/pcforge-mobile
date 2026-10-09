@@ -35,7 +35,7 @@ docker compose up -d mysql backend
 docker compose exec backend npm run seed
 
 # Backend
-cd TechAcademy5back && npm test          # 117 testes (Jest + Supertest)
+cd TechAcademy5back && npm test          # 118 testes (Jest + Supertest)
 cd TechAcademy5back && npm run lint
 
 # Web
@@ -43,6 +43,7 @@ cd TechAcademy5front && npm run test:e2e # Playwright
 
 # Mobile
 cd TechAcademy5mobile && npm start       # Expo Go, mesma rede Wi-Fi
+cd TechAcademy5mobile && npm test        # 29 testes (Jest + Testing Library)
 cd TechAcademy5mobile && npm run typecheck
 cd TechAcademy5mobile && npm run lint
 ```
@@ -69,6 +70,12 @@ o problema.
   `react-native-worklets` `0.12.x` e `expo-modules-core` declara aceitar até `0.10.x`.
   Sem a flag, `npm ci` falha e quebra o CI. Fixar a versão na mão é pior: qualquer
   escolha deixa um dos dois fora da faixa declarada.
+- **A suíte do mobile depende de dois pacotes que o preset não traz.** `jest-expo` do SDK 57
+  exige `@react-native/jest-preset` como peer, e o `@testing-library/react-native` v14 exige
+  o pacote `test-renderer` (não `react-test-renderer`). Sem os dois, o Jest nem carrega.
+- **`render` do Testing Library v14 é assíncrono.** Devolve promessa: sem `await`, o teste lê
+  o estado antes do primeiro render e passa afirmando nada. Foi o que fez as duas primeiras
+  suítes falharem por motivo errado.
 - **ESLint fica na v9 no mobile.** A v10 removeu `context.getFilename()`, que o
   `eslint-plugin-react` do config do Expo ainda usa, e o lint quebra ao carregar regra.
 - **Nunca defina `MYSQL_USER=root`.** A imagem do MySQL 8 recusa esse valor e o

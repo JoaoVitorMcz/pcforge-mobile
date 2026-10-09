@@ -14,7 +14,12 @@ module.exports = {
   },
   rules: {
     'no-unused-vars': 'off',
-    '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+    '@typescript-eslint/no-unused-vars': [
+      'warn',
+      // ignoreRestSiblings cobre o idioma { senha: _senha, ...clienteSemSenha },
+      // que existe justamente para descartar o campo do objeto devolvido.
+      { argsIgnorePattern: '^_', varsIgnorePattern: '^_', ignoreRestSiblings: true },
+    ],
     '@typescript-eslint/no-require-imports': 'off',
     '@typescript-eslint/no-namespace': 'off',
     '@typescript-eslint/no-empty-object-type': 'off',

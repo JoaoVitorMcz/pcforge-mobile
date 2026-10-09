@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { send as enviarEmail } from "emailjs-com";
+import { enviarSuporte, suporteConfigurado } from "@/services/suporte";
 import {
   ActivityIndicator,
   ScrollView,
@@ -28,30 +28,31 @@ export default function Suporte() {
   const [produto, setProduto] = useState("");
   const [mensagem, setMensagem] = useState("");
   const [status, setStatus] = useState<"ocioso" | "enviando" | "sucesso" | "erro">("ocioso");
+  // Campo faltando e falha no envio sao coisas diferentes: antes as duas
+  // mostravam "preencha os campos obrigatorios", o que confundia quem tinha
+  // preenchido tudo e caiu numa falha de rede.
+  const [erro, setErro] = useState<string | null>(null);
 
   const enviar = async () => {
     if (!nome.trim() || !email.trim() || !mensagem.trim()) {
+      setErro("Preencha nome, e-mail e mensagem para enviar.");
       setStatus("erro");
       return;
     }
 
+    setErro(null);
     setStatus("enviando");
 
     try {
-      await enviarEmail(
-        "service_qsrb1yg",
-        "template_ptttpck",
-        { nome, email, pedido, produto, mensagem, tipo: tagAtiva },
-        "Jeki9fnqeSMjQdvgA"
-      );
+      await enviarSuporte({ nome, email, pedido, produto, mensagem, tipo: tagAtiva });
       setNome("");
       setEmail("");
       setPedido("");
       setProduto("");
       setMensagem("");
       setStatus("sucesso");
-    } catch (erro) {
-      console.error("Erro ao enviar suporte:", erro);
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : "Não foi possível enviar agora.");
       setStatus("erro");
     }
   };
@@ -94,7 +95,13 @@ export default function Suporte() {
         </TouchableOpacity>
 
         {status === "sucesso" && <Text style={estilos.sucesso}>Mensagem enviada! Responderemos em até 24h.</Text>}
-        {status === "erro" && <Text style={estilos.erro}>Preencha os campos obrigatórios e tente novamente.</Text>}
+        {status === "erro" && !!erro && <Text style={estilos.erro}>{erro}</Text>}
+
+        {!suporteConfigurado && (
+          <Text style={estilos.erro}>
+            Envio indisponível: as variáveis EXPO_PUBLIC_EMAILJS_* não estão configuradas.
+          </Text>
+        )}
       </View>
     </ScrollView>
   );

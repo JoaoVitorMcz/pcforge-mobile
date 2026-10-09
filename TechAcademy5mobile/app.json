@@ -23,7 +23,13 @@
     },
     "plugins": [
       "expo-router",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "O PC Forge acessa suas fotos para definir a imagem do produto."
+        }
+      ]
     ],
     "scheme": "pcforge"
   }

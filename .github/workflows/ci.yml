@@ -106,3 +106,7 @@ jobs:
       - name: Lint
         working-directory: TechAcademy5mobile
         run: npm run lint
+
+      - name: Mobile Tests
+        working-directory: TechAcademy5mobile
+        run: npm test

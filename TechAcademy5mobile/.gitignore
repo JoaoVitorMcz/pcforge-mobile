@@ -31,6 +31,8 @@ yarn-error.*
 *.pem
 
 # local env files
+# .env entra aqui: guarda as credenciais do EmailJS e nao pode ser commitado.
+.env
 .env*.local
 
 # typescript

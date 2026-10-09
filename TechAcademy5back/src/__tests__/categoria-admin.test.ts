@@ -6,6 +6,7 @@ import {
   deletarCategoria,
 } from "../controllers/categoria.controller";
 import { TokenPayload } from "../config/jwt";
+import { authorizeRole } from "../config/auth.middleware";
 
 jest.mock("../models/Categoria");
 jest.mock("../config/jwt");
@@ -76,11 +77,17 @@ describe("Categoria CRUD - Controle de Acesso Admin", () => {
       ) as Request;
       req.cliente = clienteComum;
 
-      const res = mockResponse();
+      const res = mockResponse() as Response;
+      const next = jest.fn();
 
-      // Valida que o cliente não é admin
-      expect(req.cliente?.admin).toBe(false);
-      // A rota deveria bloquear no middleware adminMiddleware
+      // POST /categorias declara authorizeRole(["admin"]), entao e o
+      // middleware que precisa ser exercitado: conferir apenas que admin e
+      // false nao prova nada sobre o bloqueio da rota.
+      authorizeRole(["admin"])(req, res, next);
+
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(next).not.toHaveBeenCalled();
+      expect(Categoria.create).not.toHaveBeenCalled();
     });
 
     it("28. Rejeita criação de categoria sem nome", async () => {
@@ -308,11 +315,15 @@ describe("Categoria CRUD - Controle de Acesso Admin", () => {
       const req = mockRequest({}, { id: "5" }) as Request;
       req.cliente = clienteComum;
 
-      const res = mockResponse();
+      const res = mockResponse() as Response;
+      const next = jest.fn();
 
-      // Valida que cliente não é admin
-      expect(req.cliente?.admin).toBe(false);
-      // A rota deveria bloquear no middleware adminMiddleware
+      // DELETE /categorias/:id declara o mesmo authorizeRole(["admin"]).
+      authorizeRole(["admin"])(req, res, next);
+
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(next).not.toHaveBeenCalled();
+      expect(Categoria.destroy).not.toHaveBeenCalled();
     });
   });
 
